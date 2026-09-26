@@ -24,8 +24,9 @@
 
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, realpathSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 
 export const CONFIG_FILENAME = ".multi-worker-pm.json";
 
@@ -315,6 +316,29 @@ function insidePrimary(root, path) {
 
 const sha12 = (s) => createHash("sha256").update(s).digest("hex").slice(0, 12);
 
+// The installed skill's own code and prose, hashed into every digest: a PM that
+// changed under a running campaign (`npx skills update`, a hand edit to a global
+// install) is config drift exactly like an edited config file. Tests and fixtures
+// are left out so they never move the digest.
+// ponytail: computed once per process; the skill is small, a full read is cheap.
+const SKILL_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
+let skillHashMemo = null;
+function skillHash() {
+  if (skillHashMemo) return skillHashMemo;
+  const h = createHash("sha256");
+  const walk = (dir) => {
+    for (const e of readdirSync(dir, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : 1))) {
+      if (e.name === "__fixtures__" || e.name === "node_modules" || e.name.endsWith(".test.mjs")) continue;
+      const p = join(dir, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (e.isFile()) h.update(`${relative(SKILL_ROOT, p)}\0`).update(readFileSync(p)).update("\0");
+    }
+  };
+  walk(SKILL_ROOT);
+  return (skillHashMemo = h.digest("hex"));
+}
+const digestOf = (configText) => sha12(`${configText}\0${skillHash()}`);
+
 // `root` rides along so callers that already loaded the config never re-run
 // `git rev-parse --git-common-dir` for a value this load just computed.
 function result(config, path, digest, root) {
@@ -356,7 +380,7 @@ export function loadPmConfig({ argv = [], env = process.env, cwd = process.cwd()
     path = candidate;
   }
 
-  if (!path) return result(structuredClone(DEFAULTS), null, sha12(JSON.stringify(DEFAULTS)), root);
+  if (!path) return result(structuredClone(DEFAULTS), null, digestOf(JSON.stringify(DEFAULTS)), root);
 
   const text = readFileSync(path, "utf8");
   const problems = [];
@@ -390,5 +414,5 @@ export function loadPmConfig({ argv = [], env = process.env, cwd = process.cwd()
 
   problems.push(...validatePmConfig(config));
   if (problems.length) throw new PmConfigError(problems.map((p) => `${path}: ${p}`));
-  return result(config, path, sha12(text), root);
+  return result(config, path, digestOf(text), root);
 }

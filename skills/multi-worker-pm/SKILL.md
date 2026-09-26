@@ -282,7 +282,7 @@ herdr agent list                                                          # conf
 
 `validate-config`'s `checks.required` line is **advisory and never a verdict**: it cross-checks the configured substrings against the job names of the **single latest completed base-branch run — whichever workflow that happened to be**, so a `WARN` may simply mean the last run was an unrelated workflow (e.g. a labeling job). Read it as "this could be a config typo", investigate, and proceed; only the `STOP:` lines refuse.
 
-The deny-hook assertion runs in every repo that configures `denyHook` — it is the control that keeps a lane from rewriting the controls. A repo without one runs spine with that control absent; say so in the run report. A profile that denies a verb a requested flag would need downgrades that flag to print-and-wait — say so and continue; do not weaken the deny list.
+The deny-hook assertion runs in every repo that configures `denyHook` — it is the control that keeps a lane from rewriting the controls. It reads Claude Code settings only, so it drifts (exit 8) when `denyHook` is set with any other `workerKind`. A repo without one runs spine with that control absent; say so in the run report. A profile that denies a verb a requested flag would need downgrades that flag to print-and-wait — say so and continue; do not weaken the deny list.
 
 ### S-Status
 
@@ -304,7 +304,7 @@ Prints the lane table, each lane's derived state, and the next action. `--dry-ru
 
 When roster/worktree inputs are absent, the last authenticated posted state prints with a "roster not supplied; live-worker states unavailable" caveat — never `spawned` — so a bare `gh`-only status can never invite a double-spawn.
 
-The result also carries **`lastSpawnedConfig`** — the `config=<sha12>` suffix on the campaign's last *authenticated* `spawned` comment, i.e. the config this campaign is already running under. Keep it: S2 feeds it straight to the start gate as `--last-config`, which is the only way the `config-drift` refusal ever fires (an unauthenticated comment's suffix is ignored). The status output prints the ready-to-paste flag on its `config on last spawned:` line — including `--last-config none` when no lane has spawned yet, which is the first-lane form and correctly not drift.
+The result also carries **`lastSpawnedConfig`** — the `config=<sha12>` suffix on the campaign's last *authenticated* `spawned` comment, i.e. the config this campaign is already running under. The digest covers the config file and the installed skill's own code and prose, so updating the skill mid-campaign (`npx skills update`) is drift too. Keep it: S2 feeds it straight to the start gate as `--last-config`, which is the only way the `config-drift` refusal ever fires (an unauthenticated comment's suffix is ignored). The status output prints the ready-to-paste flag on its `config on last spawned:` line — including `--last-config none` when no lane has spawned yet, which is the first-lane form and correctly not drift.
 
 ### S-Lane loop (S0–S8)
 

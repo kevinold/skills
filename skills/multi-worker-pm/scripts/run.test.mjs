@@ -1142,6 +1142,45 @@ describe("run.mjs spine gate against a repo config (R5, R10, R13)", () => {
     expect(installedGate(makePrimary()).status).toBe(0);
   });
 
+  // `npx skills add` symlinks agent dirs to one real copy (.claude/skills/x ->
+  // ../../.agents/skills/x). Run through that link, the dirty check still finds
+  // the real install inside the primary.
+  it("a symlinked project-level install with an uncommitted edit refuses config-dirty", () => {
+    const root = makePrimary();
+    const real = join(root, ".agents", "skills", "multi-worker-pm");
+    cpSync(HERE, join(real, "scripts"), { recursive: true });
+    mkdirSync(join(root, ".claude", "skills"), { recursive: true });
+    symlinkSync(join("..", "..", ".agents", "skills", "multi-worker-pm"), join(root, ".claude", "skills", "multi-worker-pm"));
+    const g = (...args) => execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@example.invalid", ...args], { cwd: root, env: gitFreeEnv() });
+    g("add", "-A");
+    g("commit", "-q", "--no-verify", "-m", "vendor skill");
+    const viaLink = join(root, ".claude", "skills", "multi-worker-pm", "scripts", "run.mjs");
+    const gate = () =>
+      spawnSync(process.execPath, [viaLink, "spine", "gate", "--primary", root, "--primary-head", "abc", "--origin-base", "abc",
+        "--predecessor", JSON.stringify({ verified: true }), "--login", "acme-bot", "--last-config", "none"], { encoding: "utf8", cwd: root });
+    expect(gate().status).toBe(0);
+    writeFileSync(join(real, "scripts", "select.mjs"), `${readFileSync(join(real, "scripts", "select.mjs"), "utf8")}\n// local edit\n`);
+    const dirty = gate();
+    expect(dirty.status).toBe(2);
+    expect(dirty.stderr).toMatch(/config-dirty/);
+  });
+
+  // The digest covers the installed skill's code, so a PM that changed under a
+  // running campaign (an `npx skills update`, a hand edit to a global install)
+  // trips config-drift like an edited config does.
+  it("the config digest changes when the installed skill's code changes", () => {
+    const primary = makePrimary();
+    const dir = join(mkdtempSync(join(SCRATCH, "global-")), "multi-worker-pm");
+    cpSync(HERE, join(dir, "scripts"), { recursive: true });
+    const digest = () =>
+      spawnSync(process.execPath, [join(dir, "scripts", "run.mjs"), "spine", "config", "--digest", "--primary", primary], { encoding: "utf8" }).stdout.trim();
+    const before = digest();
+    expect(before).toMatch(/^[0-9a-f]{12}$/);
+    expect(digest()).toBe(before);
+    writeFileSync(join(dir, "scripts", "select.mjs"), `${readFileSync(join(dir, "scripts", "select.mjs"), "utf8")}\n// updated\n`);
+    expect(digest()).not.toBe(before);
+  });
+
   it("a login outside identity.expectedAuthors refuses identity-unexpected (AE7)", () => {
     const bad = runCli([
       "spine", "gate",
@@ -1238,6 +1277,20 @@ describe("run.mjs spine validate-config (Gate 0, R12)", () => {
     expect(r.status).toBe(2);
     expect(r.stderr).toMatch(/push/);
     expect(r.stderr).toMatch(/main/);
+  });
+
+  it("a push-mode bar matches the base branch as a whole entry, never a substring", () => {
+    const yml = (branches) => `name: ci\non:\n  push:\n    branches: ${branches}\njobs:\n  check:\n    runs-on: ubuntu-latest\n`;
+    const stopFor = (branches) => {
+      const root = makePrimary();
+      writeWorkflow(root, "ci.yml", yml(branches));
+      return validate(root).stderr;
+    };
+    expect(stopFor("[maintenance]")).toMatch(/no push trigger for main/);
+    expect(stopFor("[domain, release]")).toMatch(/no push trigger for main/);
+    expect(stopFor("[main]")).not.toMatch(/no push trigger/);
+    expect(stopFor("['main', release]")).not.toMatch(/no push trigger/);
+    expect(stopFor("\n      - main")).not.toMatch(/no push trigger/);
   });
 
   it("refuses a dispatch-mode bar whose workflow has no workflow_dispatch trigger", () => {
@@ -1394,6 +1447,14 @@ describe("pull-primary.sh --assert-hooks reads config denyHook (R7)", () => {
     const r = assertHooks(root);
     expect(r.status).not.toBe(0);
     expect(r.stderr).toContain(HOOK);
+  });
+
+  it("denyHook set with a non-claude workerKind → drift: Claude settings cannot verify it", () => {
+    const root = makePrimary({ ...CONSUMER_CONFIG, denyHook: HOOK, workerKind: "codex" });
+    settings(root, [HOOK]);
+    const r = assertHooks(root);
+    expect(r.status).toBe(8);
+    expect(r.stderr).toMatch(/workerKind is 'codex'/);
   });
 
   it("denyHook wired exactly once, verbatim → OK; a weakened registration → drift", () => {

@@ -810,6 +810,13 @@ function triggerBlock(yaml) {
  * The `checks.required` cross-check is advisory only: a repo whose base branch has
  * no completed run yet is new, not misconfigured.
  */
+// Is `branch` a whole entry in the trigger block ("main" in `[main]`, `- main`,
+// `"main"`) — never a substring of another branch name like `maintenance`.
+function branchListed(on, branch) {
+  const esc = branch.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(^|[\\s\\[,'"])${esc}($|[\\s\\],'"])`, "m").test(on);
+}
+
 async function cmdSpineValidateConfig(argv) {
   const cfg = pmConfig();
   // Soft read: validate-config reports every problem before refusing, so a
@@ -831,7 +838,7 @@ async function cmdSpineValidateConfig(argv) {
     const on = triggerBlock(readFileSync(file, "utf8"));
     if (bar.mode === "dispatch" && !/\bworkflow_dispatch\b/.test(on)) {
       stops.push(`STOP: ${bar.workflow} has no workflow_dispatch trigger, which postMergeBar.${kind}.mode "dispatch" needs`);
-    } else if (bar.mode === "push" && !(/\bpush\b/.test(on) && (!/\bbranches\b/.test(on) || on.includes(base)))) {
+    } else if (bar.mode === "push" && !(/\bpush\b/.test(on) && (!/\bbranches\b/.test(on) || branchListed(on, base)))) {
       stops.push(`STOP: ${bar.workflow} has no push trigger for ${base}, which postMergeBar.${kind}.mode "push" needs`);
     } else {
       notes.push(`ok: ${kind} bar ${bar.workflow} carries its ${bar.mode} trigger`);

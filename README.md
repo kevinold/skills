@@ -59,13 +59,15 @@ Copy [`config.example.json`](skills/multi-worker-pm/config.example.json) to star
 | `protectedPaths` | `[]` | Extra paths a spine lane PR may never touch. |
 | `workerKind` | `"claude"` | `herdr agent start --kind` for workers. The worker prompt sends compound-engineering commands, so the agent must have them. |
 | `renovate.branchPrefixes` / `.securityPrefixes` | `["renovate/"]` / `[]` | Renovate head-branch prefixes the renovate lane tends; security ones sort first. |
-| `denyHook` | none | A hook command `pull-primary.sh --assert-hooks` requires in the agent settings. |
+| `denyHook` | none | A hook command `pull-primary.sh --assert-hooks` requires in the Claude Code settings. Only supported with `workerKind: "claude"`. |
 
 The dispatch-mode bar starts right after merge and does not wait for deploys. A dispatched workflow that tests a deployed environment has to wait for its own deploy.
 
 Project-level installs:
 - Commit the installed skill directory before running spine mode. The start gate refuses when the PM's own files are uncommitted.
 - Exclude `.claude/skills/**` and `.agents/skills/**` from your test runner. The skill ships its own tests.
+
+Updating the skill during a spine campaign changes the config digest, so the next lane's start gate refuses with `config-drift`. Pass `--accept-config <sha12>` to continue on the new version deliberately.
 
 ### Usage
 

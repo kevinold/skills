@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# usage: clean-panes.sh [--primary <path>]
+# usage: clean-panes.sh
 #   Crash-recovery cleanup for panes a mid-campaign crash left behind — invoked at
 #   --resume and close-out, NOT the happy path (where close-lane.sh closes each pane).
 #   Closes panes whose agent is done|idle AND whose recent lines show a lane prompt,

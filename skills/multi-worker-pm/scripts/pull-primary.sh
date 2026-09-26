@@ -18,6 +18,7 @@ HERE="$(cd "$(dirname "$0")" && pwd -P)"
 pm_cfg_load --primary "$PRIMARY" || exit $?
 BASE="$(pm_cfg '.baseBranch')"
 DENY_HOOK="$(printf '%s' "$PM_CFG_JSON" | jq -r '.denyHook // empty')"
+WORKER_KIND="$(pm_cfg '.workerKind')"
 
 # KTD7: the installed skill dir is a control only when it lives inside the
 # primary (a project-level install); a global install is outside it and skipped.
@@ -63,6 +64,12 @@ assert_hooks() {
   if [ -z "$DENY_HOOK" ]; then
     echo "WARN: no denyHook configured in .multi-worker-pm.json — skipping the deny-hook assertion" >&2
     return 0
+  fi
+  # The layers below are Claude Code's settings. A configured hook that other
+  # worker kinds never load is unverifiable here, so refuse rather than report OK.
+  if [ "$WORKER_KIND" != "claude" ]; then
+    echo "DRIFT: denyHook is configured but workerKind is '$WORKER_KIND'; --assert-hooks can only verify Claude Code settings. Unset denyHook or use claude workers." >&2
+    exit 8
   fi
   local expected="$DENY_HOOK" script
   script="$(basename "$(printf '%s' "${expected##* }" | tr -d "\"'")")"
