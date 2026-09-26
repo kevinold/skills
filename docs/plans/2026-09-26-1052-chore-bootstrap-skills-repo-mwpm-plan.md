@@ -33,8 +33,8 @@ Turn this empty repo into Kevin's shared skills collection, installable into Cla
 
 MWPM has diverged into two copies. The public `multi-worker-pm-skill` repo holds an early version: select, classify and run only, 3 tests, no spine mode. The source repo holds the living version: SKILL.md at 375 lines, `references/spine-mode.md`, a config loader, about 20 shell helpers and 8 test files. The source repo's copy cannot be installed anywhere else:
 - The skill invokes `scripts/multi-worker-pm/` relative to the consumer's repo root, and `npx skills` copies only the skill folder.
-- Its config defaults are the source repo's values: `vitest` and `cypress-e2e/report` checks, the source repo's author logins, Amplify, and the Cypress post-merge bar.
-- Code and prose hardcode `staging`, the Amplify helpers, `scripts/claude-hooks/`, and source-repo issue numbers.
+- Its config defaults are the source repo's values: `vitest` and `cypress-e2e/report` checks, the source repo's author logins, cloud-provider deploy settings, and the Cypress post-merge bar.
+- Code and prose hardcode a non-default base branch, cloud-provider helpers, `scripts/claude-hooks/`, and source-repo issue numbers.
 
 Kevin also wants one install that brings all his general skills to whichever agent a project uses, as `overdrive` does for its harness.
 
@@ -67,8 +67,8 @@ Kevin also wants one install that brings all his general skills to whichever age
 - R5. No source-repo fact remains in skill prose, scripts or defaults. That covers:
   - org and repo names
   - the source repo's bot and author logins
-  - `staging` as a literal
-  - Amplify, AWS and Cognito
+  - a hardcoded base-branch name
+  - cloud-provider services and auth
   - `cypress-e2e`, `vitest` as a required check
   - vendor-specific paths, `scripts/claude-hooks/`
   - internal release tooling
@@ -101,12 +101,12 @@ Kevin also wants one install that brings all his general skills to whichever age
 
 - Archive `kevinold/multi-worker-pm-skill`, or replace its README with a pointer here. Operator-run, because it is outward-facing.
 - Move the source repo onto this package. This takes more than adding a config file. Prerequisites:
-  - a migration or alias for the source repo's existing `staging-*` state comments (KTD4)
-  - a deploy-wait hook to replace `awaitAmplifyJob` (KTD5)
+  - a migration or alias for the source repo's existing base-named state comments (KTD4)
+  - a deploy-wait hook to replace the deploy-wait flag (KTD5)
   - the source repo's removed DEFAULTS copied into its `.multi-worker-pm.json`
   - a freeze on MWPM edits in the source repo until the cutover, so the two copies do not drift
-- A generic "preview environment cleanup" hook to replace the removed Amplify branch/job helpers.
-- A generic pre-dispatch "await deploy" hook to replace `awaitAmplifyJob`. Until it exists, the dispatch-mode bar starts right after merge, so the dispatched workflow has to wait for its own target deploy. SKILL.md and the README say so.
+- A generic "preview environment cleanup" hook to replace the removed cloud-provider branch/job helpers.
+- A generic pre-dispatch "await deploy" hook to replace the deploy-wait flag. Until it exists, the dispatch-mode bar starts right after merge, so the dispatched workflow has to wait for its own target deploy. SKILL.md and the README say so.
 - Shipping a portable mutation-deny hook (the source repo's `deny-mutation-verbs.mjs` is Claude-Code-and-AWS specific).
 - Migrating other skills from `~/.claude/skills` (e.g. `whats-next`, `orch8`, `meeting-notes`, `prfaq`) after a generality review.
 - Verifying non-`claude` worker kinds (`workerKind`) end to end.
@@ -139,14 +139,14 @@ Kevin also wants one install that brings all his general skills to whichever age
   - `denyHook` (optional)
 
   The old repo's `MWPM_BASE_BRANCH` env is dropped. Config already has digest, drift and protected-path trust (R3), and env vars bypass it. Governs R7.
-- KTD4. **State names `staging-verified`/`staging-regressed` become `base-verified`/`base-regressed`.** No consumer of this package has existing state comments, and the source repo is not migrating now (KD3). Governs R5.
-- KTD5. **Amplify-specific code is deleted, not configured:**
-  - `watch-amplify-job.sh`
+- KTD4. **State names tied to the old base branch become `base-verified`/`base-regressed`.** No consumer of this package has existing state comments, and the source repo is not migrating now (KD3). Governs R5.
+- KTD5. **Cloud-provider-specific code is deleted, not configured:**
+  - the cloud deploy-job watcher script
   - `close-lane.sh --delete-branch`
   - the `aws` block
-  - `awaitAmplifyJob`
-  - the Amplify prompt clause
-  - the `find-orphaned-amplify-resources.sh` references
+  - the deploy-wait flag
+  - the cloud prompt clause
+  - the orphaned cloud-resource cleanup references
 
   Generic cloud cleanup is deferred. Governs R5.
 - KTD6. **Keep vitest as a root devDependency, rather than converting to `node --test` plus a shim.** This deviates from the call-out default. The research found 8 test files using `it.each`, `it.skipIf`, fake timers, about 30 message-arg `expect`s and 8 matchers the old shim lacks, so a zero-diff test port beats a 60-line shim. A root `vitest.config` with a setup file freezes the clock globally (R8). The `process.env.VITEST` guard in `run.mjs` stays valid.
@@ -181,7 +181,7 @@ skills/multi-worker-pm/
   SKILL.md
   config.example.json
   references/spine-mode.md
-  scripts/                          # source repo's scripts/multi-worker-pm/ minus Amplify helpers
+  scripts/                          # source repo's scripts/multi-worker-pm/ minus cloud-provider helpers
     __fixtures__/
 ```
 
@@ -250,13 +250,13 @@ skills/multi-worker-pm/
   - `skills/multi-worker-pm/scripts/dispatch-workflow.sh`, `select-push-run.sh`, `pull-primary.sh`, `post-state.sh`, `close-lane.sh`, `spawn-worker.sh`, `set-agent-label.sh`, `clean-panes.sh`
   - `skills/multi-worker-pm/scripts/portability.test.mjs`, `close-lane.test.mjs`, `spawn-worker.test.mjs`
   - `skills/multi-worker-pm/scripts/__fixtures__/*`
-  - delete `skills/multi-worker-pm/scripts/watch-amplify-job.sh`
+  - delete `the cloud deploy-job watcher script`
   - `skills/multi-worker-pm/config.example.json`
 - **Approach:**
-  1. `config.mjs`: neutral DEFAULTS (KTD2). Add the KTD3 keys with validation. Drop the `aws` block and `awaitAmplifyJob` (KTD5). Rename the source repo's provenance key to an ignored `_meta`. Allow empty `checks.required`.
-  2. Thread `baseBranch` through every `staging` literal in `run.mjs`, `spine.mjs` and the `.sh` helpers. Thread `protectedBranches` through preflight.
+  1. `config.mjs`: neutral DEFAULTS (KTD2). Add the KTD3 keys with validation. Drop the `aws` block and the deploy-wait flag (KTD5). Rename the source repo's provenance key to an ignored `_meta`. Allow empty `checks.required`.
+  2. Thread `baseBranch` through every hardcoded base-branch literal in `run.mjs`, `spine.mjs` and the `.sh` helpers. Thread `protectedBranches` through preflight.
   3. Rename state names (KTD4).
-  4. `select.mjs`: generic DANGER_PATHS (`.github/workflows/`, lockfiles, infra dirs), and append `dangerPaths` from config. Remove the vendor-specific and Amplify entries.
+  4. `select.mjs`: generic DANGER_PATHS (`.github/workflows/`, lockfiles, infra dirs), and append `dangerPaths` from config. Remove the vendor-specific and cloud-provider entries.
   5. `spine.mjs` PROTECTED_PREFIXES: `.claude/`, `.agents/`, `.github/workflows/`, `.husky/`, the config file, and `protectedPaths` from config. Remove `scripts/claude-hooks/` and `scripts/multi-worker-pm/`.
   6. Dirty check per KTD7, in both `run.mjs` and `pull-primary.sh`. `pull-primary.sh` resolves the skill dir from `$HERE/..`.
   7. `spawn-worker.sh`: `--kind` from `workerKind`.
@@ -264,7 +264,7 @@ skills/multi-worker-pm/
   9. Strip source-repo issue numbers and anecdotes from comments.
   10. Fixtures and inline test literals: rename owners, bots and authors to `acme/app` / `acme-bot` / `alice` in `__fixtures__/*.json` and in `*.test.mjs`. The source-repo config fixture becomes a "full" fixture with neutral values.
   11. `portability.test.mjs`:
-      - Build one literal list covering the full R5 set: `staging`, `amplify`, `claude-hooks`, `cognito`, the source org, bot and author names, vendor and internal-tool names, `cypress-e2e`, `vitest` as a check name.
+      - Build one literal list covering the full R5 set: the old base-branch name, cloud-provider names, `claude-hooks`, the source org, bot and author names, vendor and internal-tool names, `cypress-e2e`, `vitest` as a check name.
       - Remove the DEFAULTS-block exemption, the source-literal-ok marker and the "source defaults" fence exemption.
       - Scan `SKILL.md`, `references/` and the identity literals in `*.test.mjs`.
       - Flip the self-test so a literal inside DEFAULTS now fails.
@@ -295,7 +295,7 @@ skills/multi-worker-pm/
 - **Approach:**
   1. Add a short "Locating helpers" section near the top: resolve `<skill-dir>` as the folder containing this SKILL.md, and run every helper as `node <skill-dir>/scripts/run.mjs …` / `bash <skill-dir>/scripts/<x>.sh …` with cwd inside the consumer's primary checkout.
   2. Replace every `scripts/multi-worker-pm/` invocation with that form (KTD1). Reword the preflight existence check to `test -e <skill-dir>/scripts/run.mjs`.
-  3. Replace `staging`/`main` wording with "the base branch" and "protected branches" per config. Remove the Amplify, Cognito, `find-orphaned-amplify-resources`, internal-tool references, `npm run fix:lockfile` and source-repo-anecdote passages.
+  3. Replace hardcoded branch wording with "the base branch" and "protected branches" per config. Remove the cloud-provider, orphaned cloud-resource cleanup, internal-tool references, `npm run fix:lockfile` and source-repo-anecdote passages.
   4. Renovate lane: the lockfile repair command becomes the ecosystem-generic `npm install --package-lock-only --ignore-scripts`, or config if a repo needs another.
   5. Rewrite the path-pinned allow-rule example to use the project-level install path `.claude/skills/multi-worker-pm/scripts/merge-lane.sh`, with a note that global installs pin `~/.claude/skills/...`.
   6. Refresh `description` to say "coding-agent session" rather than "Claude Code session", because the skill installs into many agents while workers are herdr-launched per `workerKind`.
@@ -346,6 +346,6 @@ skills/multi-worker-pm/
 
 - U1–U5 verification met, and CI green.
 - No R5 literal in `skills/` (guard test enforced).
-- The Amplify helpers and the `aws` block are gone, not dead-flagged, and no abandoned experiment code is left in the diff.
+- The cloud-provider helpers and the `aws` block are gone, not dead-flagged, and no abandoned experiment code is left in the diff.
 - The README install command works against the pushed repo.
 - The plan file under `docs/plans/` is committed with the work.
