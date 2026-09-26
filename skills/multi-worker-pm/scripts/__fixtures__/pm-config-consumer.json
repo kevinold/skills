@@ -1,0 +1,17 @@
+{
+  "_meta": { "note": "Fixture standing in for an adopting consumer repo: feat: lanes, no [skip-cd] convention, a push-mode bar." },
+  "version": 1,
+  "subjects": {
+    "preview": { "prefixes": ["feat", "fix", "chore", "docs", "test"], "skipCd": "ignored" },
+    "chore": { "prefixes": ["chore", "docs", "test"], "skipCd": "ignored" }
+  },
+  "checks": { "required": ["build", "unit"], "previewContext": null },
+  "identity": { "expectedAuthors": ["acme-bot"] },
+  "postMergeBar": {
+    "preview": { "mode": "push", "workflow": "ci.yml", "runs": 1 },
+    "chore": { "mode": "push", "workflow": "ci.yml", "runs": 1 },
+    "maxRuns": 1,
+    "timeoutMinutes": 45
+  },
+  "workerEnvFiles": []
+}

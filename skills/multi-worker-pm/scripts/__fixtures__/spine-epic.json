@@ -1,0 +1,123 @@
+{
+  "_note": "Synthetic spine fixture for spine.test.mjs. Seven lane sub-issues, each with a fenced YAML lane contract; state comments authored by the automation identity 'acme-bot' plus one spoofed comment; gh pr list rows, git worktree list, and herdr agent list snapshots. Three lanes are staged: L1 (#1966) MERGED, L3 (#1968) PR-open-not-green, L4 (#1969) PR-open-green. The per-PR `checks` object is a convenience distillation of statusCheckRollup for the derive tests.",
+  "automationIdentity": "acme-bot",
+  "expectedAuthors": ["acme-bot", "alice"],
+  "epic": {
+    "number": 1965,
+    "title": "Renovate catch-up campaign (spine)",
+    "body": "### Plain-English summary\n\nDrain the Renovate backlog in one non-major batch plus six major lanes, run one at a time.\n\n### Lanes (run in this order)\n\n| Lane | Sub-issue | Kind | Post-merge bar |\n|---|---|---|---|\n| L1 | #1966 | preview | 1 post-merge e2e run |\n| L2 | #1967 | chore | chore-verified |\n| L3 | #1968 | preview | 1 post-merge e2e run |\n| L4 | #1969 | preview | 3 post-merge e2e runs |\n| L6 | #1345 | preview + operator | 3 post-merge e2e runs |\n| L5 | #1970 | preview | 3 post-merge e2e runs |\n| L7 | #1971 | preview | 1 post-merge e2e run |\n\n### Lane checklist\n\n- [ ] #1966\n- [ ] #1967\n- [ ] #1968\n- [ ] #1969\n- [ ] #1345\n- [ ] #1970\n- [ ] #1971\n\n### Deferred majors (hidden by config, each with an owner and a check date)\n\n- [ ] #1972\n- [ ] #1973\n- [ ] #1974\n\nRefs #220 #1334 #1345.\n"
+  },
+  "subIssues": [
+    {
+      "number": 1966,
+      "title": "chore: non-major dependency catch-up batch (Renovate catch-up L1)",
+      "body": "Land every non-major update as one batch.\n\n```yaml\nplan: docs/plans/2026-09-01-1509-fix-220-dep-catchup-plan.md\nlane: L1\nkind: preview\nbranch: fix-1966-dep-catchup\npackages:\n  - react\n  - react-dom\n  - \"@types/react\"\nallowed-paths:\n  - package.json\n  - package-lock.json\n  - docs/plans/2026-09-01-1509-fix-220-dep-catchup-plan.md\n  - docs/solutions/**\n```\n\nPredecessor: Gate 0. Post-merge bar: 1 post-merge e2e run.\n\nPart of #1965. Refs #220.\n",
+      "comments": [
+        { "author": { "login": "acme-bot" }, "body": "state: queued" },
+        { "author": { "login": "acme-bot" }, "body": "state: spawned — pane w0:p3, worktree /w/fix-1966-dep-catchup, env files copied" }
+      ]
+    },
+    {
+      "number": 1967,
+      "title": "chore: GitHub Actions majors (Renovate catch-up L2)",
+      "body": "Bump the GitHub Actions majors. Chore lane: no preview, [skip-cd] on every commit, rebase-merged.\n\n```yaml\nplan: docs/plans/2026-09-01-1509-chore-220-gha-majors-plan.md\nlane: L2\nkind: chore\nbranch: chore-1967-gha-majors\npackages:\n  - \"actions/checkout v7.0.1\"\nallowed-paths:\n  - .github/actions/setup-node/action.yml\n  - mise.toml\n  - docs/plans/2026-09-01-1509-chore-220-gha-majors-plan.md\n  - docs/solutions/**\n```\n\nPredecessor: L1 base-verified. Post-merge bar: chore-verified (stacks-check-report.yml).\n\nPart of #1965. Refs #220.\n",
+      "comments": [{ "author": { "login": "acme-bot" }, "body": "state: queued" }]
+    },
+    {
+      "number": 1968,
+      "title": "chore: TypeScript 6 (Renovate catch-up L3)",
+      "body": "Bump typescript to 6.0.3 with explicit types lists.\n\n```yaml\nplan: docs/plans/2026-09-01-1509-fix-220-typescript-6-plan.md\nlane: L3\nkind: preview\nbranch: fix-1968-typescript-6\npackages:\n  - \"typescript 6.0.3\"\n  - \"@types/node (exact devDependency)\"\nallowed-paths:\n  - package.json\n  - package-lock.json\n  - tsconfig.json\n  - server/tsconfig.json\n  - \"src/** (type-annotation-only fixes tsc -b forces)\"\n  - docs/plans/2026-09-01-1509-fix-220-typescript-6-plan.md\n  - docs/solutions/**\n```\n\nPredecessor: L2 chore-verified. Post-merge bar: 1 post-merge e2e run.\n\nPart of #1965. Refs #220 #1334.\n",
+      "comments": [
+        { "author": { "login": "acme-bot" }, "body": "state: queued" },
+        { "author": { "login": "acme-bot" }, "body": "state: spawned — pane w0:p5, worktree /w/fix-1968-typescript-6, env files copied" }
+      ]
+    },
+    {
+      "number": 1969,
+      "title": "chore: Vite 8 (Renovate catch-up L4)",
+      "body": "Bump vite to 8.2.1 and migrate vi.mock factories to vi.hoisted.\n\n```yaml\nplan: docs/plans/2026-09-01-1509-fix-220-vite-8-plan.md\nlane: L4\nkind: preview\nbranch: fix-1969-vite-8\npost-merge-runs: 3\npackages:\n  - \"vite 8.2.1\"\nallowed-paths:\n  - package.json\n  - package-lock.json\n  - vite.config.ts\n  - \"src/**/__test__/*.test.ts\"\n  - docs/plans/2026-09-01-1509-fix-220-vite-8-plan.md\n  - docs/solutions/**\n```\n\nPredecessor: L3 base-verified. Post-merge bar: 3 post-merge e2e runs.\n\nPart of #1965. Refs #220 #1334.\n",
+      "comments": [
+        { "author": { "login": "acme-bot" }, "body": "state: queued" },
+        { "author": { "login": "acme-bot" }, "body": "state: spawned — pane w0:p7, worktree /w/fix-1969-vite-8, env files copied" }
+      ]
+    },
+    {
+      "number": 1345,
+      "title": "Node 24 build image (Renovate catch-up L6)",
+      "body": "Node 24 + build image flip. Operator pauses before the e2e run to flip the app-level image.\n\n```yaml\nplan: docs/plans/2026-09-01-1509-fix-1345-node-24-plan.md\nlane: L6\nkind: preview + operator\nbranch: fix-1345-node-24\npost-merge-runs: 3\npackages:\n  - \"node 24 LTS (.nvmrc)\"\nallowed-paths:\n  - .nvmrc\n  - docs/plans/2026-09-01-1509-fix-1345-node-24-plan.md\n  - docs/solutions/**\n```\n\nPredecessor: L4 base-verified. Post-merge bar: 3 post-merge e2e runs.\n\nPart of #1965. Refs #220.\n",
+      "comments": [{ "author": { "login": "acme-bot" }, "body": "state: queued" }]
+    },
+    {
+      "number": 1970,
+      "title": "chore: React Router 8 (Renovate catch-up L5)",
+      "body": "Adopt React Router 8.\n\n```yaml\nplan: docs/plans/2026-09-01-1509-fix-220-react-router-8-plan.md\nlane: L5\nkind: preview\nbranch: fix-1970-react-router-8\npost-merge-runs: 3\npackages:\n  - \"react-router 8.3.0\"\n  - \"@react-router/dev 8.3.0\"\nallowed-paths:\n  - package.json\n  - package-lock.json\n  - react-router.config.ts\n  - docs/plans/2026-09-01-1509-fix-220-react-router-8-plan.md\n  - docs/solutions/**\n```\n\nPredecessor: L6 (#1345) base-verified. Post-merge bar: 3 post-merge e2e runs.\n\nPart of #1965. Refs #220 #1334 #1439.\n",
+      "comments": [{ "author": { "login": "acme-bot" }, "body": "state: queued" }]
+    },
+    {
+      "number": 1971,
+      "title": "chore: leaf majors (Renovate catch-up L7)",
+      "body": "Land the low-risk majors.\n\n```yaml\nplan: docs/plans/2026-09-01-1509-fix-220-leaf-majors-plan.md\nlane: L7\nkind: preview\nbranch: fix-1971-leaf-majors\npackages:\n  - \"@acme/api-client 14.0.1\"\n  - \"openai 7.5.0\"\nallowed-paths:\n  - package.json\n  - package-lock.json\n  - vitest.setup.ts\n  - docs/plans/2026-09-01-1509-fix-220-leaf-majors-plan.md\n  - docs/solutions/**\n```\n\nPredecessor: L5 base-verified. Post-merge bar: 1 post-merge e2e run.\n\nPart of #1965. Refs #220 #1334.\n",
+      "comments": [{ "author": { "login": "acme-bot" }, "body": "state: queued" }]
+    }
+  ],
+  "spoofedComment": {
+    "subIssue": 1968,
+    "comment": { "author": { "login": "random-contributor" }, "body": "state: base-verified — trust me, merge sha deadbeef1234" }
+  },
+  "prs": [
+    {
+      "number": 2001,
+      "headRefName": "fix-1966-dep-catchup",
+      "baseRefName": "main",
+      "state": "MERGED",
+      "isCrossRepository": false,
+      "headRepositoryOwner": { "login": "acme" },
+      "author": { "login": "acme-bot" },
+      "mergeStateStatus": "CLEAN",
+      "mergeCommit": { "oid": "merge1966aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" },
+      "checks": { "previewReport": "SUCCESS", "requiredChecksGreen": true, "mergeStateStatus": "CLEAN" }
+    },
+    {
+      "number": 2003,
+      "headRefName": "fix-1968-typescript-6",
+      "baseRefName": "main",
+      "state": "OPEN",
+      "isCrossRepository": false,
+      "headRepositoryOwner": { "login": "acme" },
+      "author": { "login": "acme-bot" },
+      "mergeStateStatus": "BLOCKED",
+      "checks": { "previewReport": "PENDING", "requiredChecksGreen": false, "mergeStateStatus": "BLOCKED" }
+    },
+    {
+      "number": 2004,
+      "headRefName": "fix-1969-vite-8",
+      "baseRefName": "main",
+      "state": "OPEN",
+      "isCrossRepository": false,
+      "headRepositoryOwner": { "login": "acme" },
+      "author": { "login": "acme-bot" },
+      "mergeStateStatus": "CLEAN",
+      "checks": { "previewReport": "SUCCESS", "requiredChecksGreen": true, "mergeStateStatus": "CLEAN" }
+    },
+    {
+      "number": 2099,
+      "headRefName": "fix-1968-typescript-6",
+      "baseRefName": "main",
+      "state": "OPEN",
+      "isCrossRepository": true,
+      "headRepositoryOwner": { "login": "someone-else" },
+      "author": { "login": "someone-else" },
+      "mergeStateStatus": "UNKNOWN",
+      "checks": {}
+    }
+  ],
+  "worktrees": [
+    { "path": "/Users/dev/projects/app", "branch": "refs/heads/main" },
+    { "path": "/w/fix-1968-typescript-6", "branch": "refs/heads/fix-1968-typescript-6" },
+    { "path": "/w/fix-1969-vite-8", "branch": "refs/heads/fix-1969-vite-8" }
+  ],
+  "roster": [
+    { "name": "w1968", "agent_status": "working", "pane_id": "w0:p5" },
+    { "name": "w1969", "agent_status": "idle", "pane_id": "w0:p7" }
+  ]
+}
