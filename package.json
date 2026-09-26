@@ -1,0 +1,16 @@
+{
+  "name": "kevinold-skills",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Kevin Old's shared coding-agent skills, installable with `npx skills add kevinold/skills`",
+  "license": "MIT",
+  "author": "Kevin Old",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "4.1.11"
+  }
+}
