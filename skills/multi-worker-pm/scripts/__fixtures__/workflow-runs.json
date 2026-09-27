@@ -1,0 +1,70 @@
+{
+  "_note": "Workflow-run rows for the selectUniqueRun (R13/KTD6) scenarios in spine.test.mjs. Run createdAt timestamps are relative to FROZEN_NOW = 2026-09-16T12:00:00.000Z (see spine.test.mjs): 5001 is +5s with the requested sha 'merge1966' and actor alice (selected); 5002 is +6s but a DIFFERENT sha (excluded); 5003 is -1s before `since` (excluded); 5004 is +10s but a different actor (excluded).",
+  "requestedSha": "merge1966",
+  "actor": "alice",
+  "runs": [
+    {
+      "databaseId": 5001,
+      "createdAt": "2026-09-16T12:00:05.000Z",
+      "headSha": "merge1966",
+      "actor": {
+        "login": "alice"
+      }
+    },
+    {
+      "databaseId": 5002,
+      "createdAt": "2026-09-16T12:00:06.000Z",
+      "headSha": "other2222",
+      "actor": {
+        "login": "alice"
+      }
+    },
+    {
+      "databaseId": 5003,
+      "createdAt": "2026-09-16T11:59:59.000Z",
+      "headSha": "merge1966",
+      "actor": {
+        "login": "alice"
+      }
+    },
+    {
+      "databaseId": 5004,
+      "createdAt": "2026-09-16T12:00:10.000Z",
+      "headSha": "merge1966",
+      "actor": {
+        "login": "someone-else"
+      }
+    }
+  ],
+  "push": {
+    "_note": "Push-mode bar rows (R7/KTD4): the run the base-branch push itself triggered at the merge commit. `gh run list --event push --branch main --commit <sha>` filters server-side, so the `event` field here is documentation \u2014 selectUniqueRun sees only createdAt/headSha and is called with NO actor. mergedAt is the PR's merge timestamp; `since` is mergedAt \u2212 60s. 6001 is the run to select; 6002 is at another sha; 6003 was created before `since`; `duplicate` (6004) is the second run at the merge sha that makes the selection ambiguous.",
+    "mergedAt": "2026-09-16T12:00:00.000Z",
+    "since": "2026-09-16T11:59:00.000Z",
+    "runs": [
+      {
+        "databaseId": 6001,
+        "createdAt": "2026-09-16T12:00:03.000Z",
+        "headSha": "merge1966",
+        "event": "push"
+      },
+      {
+        "databaseId": 6002,
+        "createdAt": "2026-09-16T12:00:04.000Z",
+        "headSha": "other2222",
+        "event": "push"
+      },
+      {
+        "databaseId": 6003,
+        "createdAt": "2026-09-16T11:58:30.000Z",
+        "headSha": "merge1966",
+        "event": "push"
+      }
+    ],
+    "duplicate": {
+      "databaseId": 6004,
+      "createdAt": "2026-09-16T12:00:09.000Z",
+      "headSha": "merge1966",
+      "event": "push"
+    }
+  }
+}

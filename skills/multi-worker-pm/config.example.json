@@ -1,0 +1,30 @@
+{
+  "_meta": { "note": "Copy to .multi-worker-pm.json at your repo root and edit. Every key is optional except where spine mode needs identity." },
+  "version": 1,
+  "baseBranch": "main",
+  "protectedBranches": ["main"],
+  "subjects": {
+    "preview": { "prefixes": ["feat", "fix", "refactor", "chore", "docs", "test"], "skipCd": "ignored" },
+    "chore": { "prefixes": ["chore", "docs", "test"], "skipCd": "ignored" }
+  },
+  "checks": { "required": ["build", "test"], "previewContext": "preview/deploy" },
+  "identity": { "expectedAuthors": ["my-automation-bot", "my-github-login"] },
+  "postMergeBar": {
+    "preview": {
+      "mode": "dispatch",
+      "workflow": "e2e.yml",
+      "runs": 1,
+      "inputs": { "ref": "main", "sha": "${sha}" },
+      "retryMarker": "(Attempt 2 of"
+    },
+    "chore": { "mode": "push", "workflow": "ci.yml", "runs": 1 },
+    "maxRuns": 3,
+    "timeoutMinutes": 60
+  },
+  "workerEnvFiles": [".env.local"],
+  "dangerPaths": ["infra/"],
+  "protectedPaths": ["ops/"],
+  "workerKind": "claude",
+  "renovate": { "branchPrefixes": ["renovate/"], "securityPrefixes": [] },
+  "denyHook": "node \"${CLAUDE_PROJECT_DIR:-.}/hooks/deny-mutations.mjs\""
+}

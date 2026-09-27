@@ -1,0 +1,31 @@
+{
+  "_meta": { "note": "Fixture: every key set, a dispatch-mode preview bar, a [skip-cd] convention." },
+  "version": 1,
+  "baseBranch": "main",
+  "subjects": {
+    "preview": { "prefixes": ["feat", "fix", "refactor", "fix(deps)", "chore", "docs", "test", "script"], "skipCd": "forbidden" },
+    "chore": { "prefixes": ["chore", "docs", "test", "script"], "skipCd": "required" }
+  },
+  "checks": { "required": ["unit"], "previewContext": "e2e/report" },
+  "identity": { "expectedAuthors": ["alice", "bob"] },
+  "postMergeBar": {
+    "preview": {
+      "mode": "dispatch",
+      "workflow": "e2e.yml",
+      "runs": 1,
+      "inputs": {
+        "branch": "main",
+        "sha": "${sha}",
+        "url_prefix": "https://preview.example.com/s/"
+      },
+      "retryMarker": "(Attempt 2 of"
+    },
+    "chore": { "mode": "dispatch", "workflow": "unit.yml", "runs": 1 },
+    "maxRuns": 3,
+    "timeoutMinutes": 90
+  },
+  "workerEnvFiles": ["outputs*.json", ".env.local", ".generated/"],
+  "dangerPaths": [],
+  "protectedPaths": [],
+  "workerKind": "claude"
+}
