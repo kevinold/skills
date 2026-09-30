@@ -65,13 +65,11 @@ const ngrams = (line) => {
   return out;
 };
 
-export function sweepPrivate(name, src, hashes = PRIVATE) {
-  const hits = [];
-  src.split("\n").forEach((line, i) => {
-    if (ngrams(line).some((g) => hashes.has(sha(g)))) hits.push(`${name}:${i + 1}`);
-  });
-  return hits;
-}
+// `name:lineNo` for every line of `src` that `pred` matches.
+const lineHits = (name, src, pred) => src.split("\n").flatMap((l, i) => (pred(l) ? [`${name}:${i + 1}`] : []));
+
+export const sweepPrivate = (name, src, hashes = PRIVATE) =>
+  lineHits(name, src, (l) => ngrams(l).some((g) => hashes.has(sha(g))));
 
 describe("no private-source name in the skills or this plan (R3)", () => {
   it.each([...FILES, PLAN].map(rel))("%s is clean", (f) => {
@@ -109,8 +107,7 @@ describe("promotion bar is identical in both skills (R4)", () => {
 // --- Status legend (R5, KD4) ---------------------------------------------------
 
 const RETIRED_STATUS = /\*\*(LIVE|ROADMAP)\*\*|chip (live|road)\b|road-row/;
-export const retiredStatusHits = (name, src) =>
-  src.split("\n").flatMap((l, i) => (RETIRED_STATUS.test(l) ? [`${name}:${i + 1}`] : []));
+export const retiredStatusHits = (name, src) => lineHits(name, src, (l) => RETIRED_STATUS.test(l));
 
 describe("status legend is BUILT/PARTIAL/PLANNED only (R5)", () => {
   it.each(FILES.map(rel))("%s uses no LIVE/ROADMAP marker", (f) => {
@@ -130,8 +127,7 @@ describe("status legend is BUILT/PARTIAL/PLANNED only (R5)", () => {
 // --- No absolute paths ---------------------------------------------------------
 
 const ABSOLUTE = /\/Users\/|\/home\/[a-z]|file:\/\/\/|[A-Z]:\\Users\\/;
-export const absoluteHits = (name, src) =>
-  src.split("\n").flatMap((l, i) => (ABSOLUTE.test(l) ? [`${name}:${i + 1}`] : []));
+export const absoluteHits = (name, src) => lineHits(name, src, (l) => ABSOLUTE.test(l));
 
 describe("no absolute local paths in the skills", () => {
   it.each(FILES.map(rel))("%s", (f) => {
@@ -177,7 +173,7 @@ export function linkProblems(file, src, skillDir) {
 
 describe("every link resolves inside its own skill (R2)", () => {
   for (const skill of SKILLS) {
-    it.each(walk(skill).filter((f) => /\.(md|html)$/.test(f)).map(rel))("%s", (f) => {
+    it.each(FILES.filter((f) => f.startsWith(skill + "/") && /\.(md|html)$/.test(f)).map(rel))("%s", (f) => {
       expect(linkProblems(join(ROOT, f), read(join(ROOT, f)), skill)).toEqual([]);
     });
   }
