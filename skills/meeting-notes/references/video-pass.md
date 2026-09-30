@@ -21,41 +21,48 @@ Run it after the summary and before the PRFAQ handoff (SKILL.md workflow step 5)
 
 1. The harness's skill loader, when it can load `watch` by name — `SKILL_DIR` is the directory of the `SKILL.md` it loaded.
 2. Otherwise, the first `SKILL.md` that has a sibling `scripts/watch.py` under one of: `~/.claude/plugins/cache/*/watch/*/skills/watch`, `~/.claude/skills/watch`, `~/.agents/skills/watch`, `~/.codex/skills/watch`, `./.claude/skills/watch`, `./.agents/skills/watch`.
-3. No hit → `watch` is missing. Skip the recording pass and print one line: `Install watch to add a screen timeline: npx skills add bradautomates/claude-video (or /plugin install watch@claude-video in Claude Code).` The transcript and summary are still filed.
+3. No hit → `watch` is missing. Skip the recording pass and print the install line from SKILL.md's **Video pass** section. The transcript and summary are still filed.
 
 Then run its preflight: `python3 "$SKILL_DIR/scripts/setup.py" --check`. Exit `0` or `3` (no Whisper key) → proceed. Exit `2` or `4` (missing `ffmpeg`/`ffprobe`/`yt-dlp`) → skip the recording pass and tell the user to run `python3 "$SKILL_DIR/scripts/setup.py"`.
 
 ## Recording pass
 
-Every `watch` call in this pass follows three rules:
+Sample at fixed times, not by scene detection: a screen share is often a static page, which scene and keyframe selection skip. Every `watch` call in this pass has the same shape:
 
+```bash
+python3 "$SKILL_DIR/scripts/watch.py" "<recording or downloaded file>" \
+  --detail transcript --timestamps <t1,t2,…> --max-frames <number of timestamps> \
+  --no-whisper --out-dir <tmp>/pass-NN
+```
+
+- **`--detail transcript --timestamps`** grabs exactly the listed moments (`watch` calls them cue frames, `cue_NNNN.jpg`) and skips scene sampling.
 - **`--no-whisper`, always.** The transcript already exists. Without the flag, `watch` may upload the meeting audio to a transcription API when a recording has no captions — which a local recording never does.
-- **An explicit `--detail` and `--max-frames`.** Never inherit the user's `watch` defaults; they can make a single call uncapped.
-- **Its own `--out-dir`.** Make one temp parent directory outside the repo (`mktemp -d`), and give each call its own subdirectory (`pass-00`, `pass-01`, …). `watch` deletes the previous `frame_*.jpg` files in an out-dir on every run, so a shared one keeps only the last window.
+- **`--max-frames`** set to the timestamp count, so the user's `watch` defaults can't change the budget.
+- **Its own `--out-dir`.** Make one temp parent directory outside the repo (`mktemp -d`), and give each call its own subdirectory (`pass-00`, `pass-01`, …). `watch` clears earlier frames in an out-dir on every run, so a shared one keeps only the last call.
 
-Delete the temp parent when the pass ends, whether it succeeded or failed.
+Delete the temp parent when the pass ends, whether it succeeded or failed. If any `watch` call fails, stop the recording pass there: delete the temp parent, report the error in one line, and finish the rest of the workflow — the transcript and summary still stand.
 
 ### 1. Scan
 
-One full-length call to find where screens were shared: `--detail efficient --max-frames <ceil(duration_s / 60)> --no-whisper --out-dir <tmp>/pass-00`. Get the duration from `ffprobe`, or from the notetaker summary's recording length.
+Get the duration from `ffprobe`, or from the notetaker summary's recording length. Scan timestamps are every 60 s, **plus** every moment the transcript flags a share ("sharing my screen", "can you see this", "let me show you", "look at this"), plus 10 s after each. A share shorter than a minute is only caught by those cues.
 
 Read every frame. Mark the **share windows** — spans where a screen, not just camera tiles, fills the frame. For a URL, the scan's download lands under `<tmp>/pass-00/download/`; every later call reads that local file, never the URL again.
 
 ### 2. Budget
 
-For each window, plan `ceil(window_s / 20)` frames. Add them up with the scan. If the total exceeds **150 frames**, show the per-window counts and ask before running — the user can raise the ceiling, drop windows, or thin the sampling.
+For each window, plan one frame every 20 s. Add them up with the scan. If the total exceeds **150 frames**, show the per-window counts and ask before running — the user can raise the ceiling, drop windows, or thin the sampling.
 
 ### 3. Focused passes
 
-One call per window: `--start <HH:MM:SS> --end <HH:MM:SS> --detail balanced --max-frames <ceil(window_s / 20)> --no-whisper --out-dir <tmp>/pass-NN`. These run at `watch`'s default 512px width.
+One call per window with timestamps every 20 s across it, at `watch`'s default 512px width.
 
-Read every frame. Where small text matters — a row's content, or deciding whether a frame is safe to commit — re-grab just those moments at `--resolution 1024 --timestamps <t1,t2,…> --detail transcript --no-whisper` in a fresh `pass-NN`.
+Read every frame. Where small text matters — a row's content, or deciding whether a frame is safe to commit — re-grab just those moments with `--resolution 1024` in a fresh `pass-NN`. A frame approved for commit is copied from its 1024px re-grab when one exists.
 
-`watch` names frames `frame_NNNN.jpg` and prints each one's `t=MM:SS` or `t=H:MM:SS`. Record those timestamps; committed frames are named from them (`HH-MM-SS.jpg`), not from the sequence number.
+`watch` prints each frame's `t=MM:SS` or `t=H:MM:SS`. Record those timestamps; committed frames are named from them (`HH-MM-SS.jpg`), not from the sequence number.
 
 ## Screenshot pass
 
-Order the screenshots by their timestamps (filename, EXIF, or the notetaker's metadata). Screenshots with no timestamp keep the order they arrived in, and their rows say **time unknown**. Notetaker capture roles ("hero", "filmstrip", and the like) say why a frame was captured, not what it shows — every frame may still show a shared screen. Then continue with the timeline and PII gate as below.
+Order the screenshots by their timestamps (filename, EXIF, or the notetaker's metadata). Screenshots with no timestamp keep the order they arrived in, and their rows say **time unknown**. Notetaker capture roles ("hero", "filmstrip", and the like) say why a frame was captured, not what it shows — every frame may still show a shared screen. A committed screenshot keeps its file type and is named `<HH-MM-SS>.<ext>` when its time is known, or `shot-<n>.<ext>` in arrival order when it isn't. Then continue with the timeline and PII gate as below.
 
 ## Write the timeline
 
@@ -112,7 +119,7 @@ Describe instead: "a customer deal record in the production CRM (name redacted)"
 
 Reject any frame that also shows, even in a corner: a bookmarks bar or tab titles naming clients, a notetaker's recording list, an inbox or chat sidebar, account avatars or emails, a terminal prompt with a username or hostname, or a production record. When unsure, reject — the row text still carries what was on screen.
 
-**Approval — once, as a whole.** Show the user the proposed frame list: timestamp, one-line description, and why it's safe. The user approves, trims, or rejects the list in one answer. Only then copy the approved frames into `assets/video-frames/HH-MM-SS.jpg`, and set every other row's Committed cell to `no (<reason>)`.
+**Approval — once, as a whole.** Show the user the proposed frame list: timestamp, one-line description, and why it's safe. The user approves, trims, or rejects the list in one answer. Only then copy the approved frames into `assets/video-frames/` (named per the recording or screenshot pass above), and set every other row's Committed cell to `no (<reason>)`.
 
 **After copying**, check that every `assets/video-frames/` link in the timeline and summary points at a file that exists, and that no frame in `assets/video-frames/` goes unlinked.
 
@@ -122,7 +129,7 @@ Add one line to the summary's metadata block:
 
 `**Recording + screen timeline:** <recording basename, or "notetaker screenshots"> → [<date>-screen-timeline.md](<date>-screen-timeline.md)`
 
-In **video-pass-only** mode (the meeting was already filed), that line and the new files are the only changes. Do not regenerate the summary, change its H2 headings, or delete frames a committed doc links to.
+In **video-pass-only** mode (the meeting was already filed), that line and the new files are the only changes. Do not regenerate the summary, change its H2 headings, or delete frames a committed doc links to. A second recording or screenshot set for a date that already has a timeline gets `<date>-screen-timeline-2.md` (then `-3`, …) and its own metadata line.
 
 ## Finish
 

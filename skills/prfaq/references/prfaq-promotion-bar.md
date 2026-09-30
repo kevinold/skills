@@ -36,7 +36,7 @@ Never write "LIVE" or "shipped" for something that isn't actually in production.
 
 ## 5. Ground every status marker in an actual codebase scan — never blanket-PLANNED
 
-Before assigning 🟢/🟡/🔵 to any capability, search the codebase for what already exists and anchor each marker to a real repo-relative path (code, or a design doc for 🔵). Marking a built system PLANNED is wrong and erodes trust in the doc. Search, don't recall. Re-verify drift right before publishing; code moves faster than a plan.
+Before assigning 🟢/🟡/🔵 to any capability, search the codebase for what already exists and anchor each marker to a real repo-relative path — code, or for 🔵 a design doc, plan, or the meeting summary that named it. Marking a built system PLANNED is wrong and erodes trust in the doc. Search, don't recall. Re-verify drift right before publishing; code moves faster than a plan.
 
 ## 6. Ship a dual deliverable: canonical Markdown + a self-contained HTML twin
 

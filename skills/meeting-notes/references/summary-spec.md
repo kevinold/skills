@@ -5,7 +5,7 @@ What `<date>-summary.md` must contain and how it must read. A summary that only 
 ## Two shapes
 
 - **Long form** (multi-person feature calls, substantive debate) — the full section catalog below.
-- **Short form** (small two-person calls, little debate) — acceptable when the call was light: title `# <Participants> — <date> — <Topic>`, a headline decision, a key-points list, and a short side-observations list. Skip the deep-dive H2 machinery.
+- **Short form** (small two-person calls, little debate) — acceptable when the call was light: title `# <Participants> — <date> — <Topic>`, a headline decision, a key-points list, a short side-observations list, and the closing PRFAQ section (one line when nothing qualifies). Skip the deep-dive H2 machinery.
 
 Pick the shape from the transcript, not a rule. When in doubt, long form.
 

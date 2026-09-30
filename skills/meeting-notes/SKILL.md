@@ -55,7 +55,7 @@ If `docs/meeting-notes/` doesn't exist yet, create it on first file.
    - Neither available, or a non-docx binary → see step 3.
 2. **Gate before writing:** output is non-empty AND contains speaker-turn lines — `Name   M:SS text` shape (name↔timestamp separator is plain spaces; timestamps roll to `H:MM:SS` past the hour). Beware: `textutil` delimits turn boundaries with invisible **U+2028 line separators**, not spaces — plain-text grep for `Name   M:SS` still matches, but `^ `-anchored regexes won't; match with `\s`-tolerant patterns. If the doc has no speaker turns (agenda/recap-only), still file it; the summary degrades to a notes digest and the no-timestamp attribution rule applies.
 3. **On extraction failure** (no converter, or conversion produced nothing usable): still file the renamed docx, skip the transcript `.md`, set the summary's source line to "transcript not extractable," and continue.
-4. Transcript file shape: `# <Series> — Meeting Transcript (<YYYY-MM-DD>)`, then a provenance blockquote (`> Auto-extracted from \`<docx>\` via \`<textutil|pandoc>\`. Speaker · timestamp · text. Unedited — auto-transcription artifacts remain.`), then `---`, then the extracted text verbatim.
+4. Transcript file shape: `# <Series> — Meeting Transcript (<YYYY-MM-DD>)`, then a provenance blockquote (`> Auto-extracted from \`<docx>\` via \`<textutil|pandoc>\`. Speaker · timestamp · text. Unedited — auto-transcription artifacts remain.`), then `---`, then the extracted text verbatim. For a `.md`/`.txt` input, the same header and gate apply, and the blockquote reads `> Filed from \`<original filename>\` as provided. Speaker · timestamp · text. Unedited.`
 
 ## Summary
 
@@ -73,7 +73,7 @@ If the notetaker ships its own auto-summary (Otter, Fireflies, Zoom AI, Gemini, 
 
 When a recording (local file or URL) or notetaker screenshots are supplied, **read [references/video-pass.md](./references/video-pass.md) in full** and run it after the summary and **before** the PRFAQ handoff, so refinements can cite committed timeline rows. It writes `<date>-screen-timeline.md` and commits only frames that clear its PII gate.
 
-- A recording needs the external [`watch`](https://github.com/bradautomates/claude-video) skill. Without it, file the transcript and summary, skip the recording's frame pass, and print one install line: `npx skills add bradautomates/claude-video` (or `/plugin install watch@claude-video` in Claude Code).
+- A recording needs the external [`watch`](https://github.com/bradautomates/claude-video) skill. Without it, file the transcript and summary, skip the recording's frame pass, and print this one line: `Install watch to add a screen timeline: npx skills add bradautomates/claude-video (or /plugin install watch@claude-video in Claude Code).`
 - Screenshots alone need no `watch`.
 - Link the timeline from the summary's metadata block: `**Recording + screen timeline:** <recording basename, or "notetaker screenshots"> → [<date>-screen-timeline.md](<date>-screen-timeline.md)`.
 
@@ -82,7 +82,7 @@ When a recording (local file or URL) or notetaker screenshots are supplied, **re
 Meetings are where domain vocabulary is born, renamed, locked, or retired. Every meeting decision that **establishes, renames, locks, or deprecates a canonical term** is highlighted in the summary. If the repo has a `CONCEPTS.md`, it is also **persisted to `CONCEPTS.md` in the same change** — never left only in the summary.
 
 - **Highlight in the summary:** surface these under a dedicated `## Vocabulary decisions` block (and in the TL;DR when they're headline). Each: the term, what changed (new / renamed-from / **locked** / deprecated), and attribution.
-- **Persist to CONCEPTS.md:** add or update the entry in the file's existing format, using its convention for retired synonyms. A term that's decided-but-not-fully-specified gets a provisional entry (note what's still being specified) rather than being omitted; drop the provisional hedge once a later meeting **locks** it. Cite the source meeting notes in the entry.
+- **Persist to CONCEPTS.md:** add or update the entry in the file's existing format. Record retired synonyms with the file's convention, or an `_Avoid:_ <old term>` line when it has none. When an existing entry already names the same thing under another word, rename or refine that entry rather than adding a near-duplicate. A term that's decided-but-not-fully-specified gets a provisional entry (note what's still being specified) rather than being omitted; drop the provisional hedge once a later meeting **locks** it. Cite the source meeting notes in the entry.
 - **Scope:** domain entities, named processes, roles, status concepts, and customer-facing labels — not file/class/function names or implementation choices. `CONCEPTS.md` is a glossary.
 - **No `CONCEPTS.md`:** keep the Vocabulary decisions block in the summary and do not create the file.
 
@@ -107,12 +107,13 @@ Source: [<date>-summary.md](<date>-summary.md)
 ## <prfaq-file-name>-prfaq.md
 
 - **Claim changes:** <what the PRFAQ now says differently> (Name, ~M:SS)
-- **Status deltas:** <capability> — <old status> → <new status or "re-check">
+- **Status deltas:**
+  - <capability> — <old status> → <new status or "re-check">
 - **New open questions:** <question> (Name, ~M:SS)
 - **Resolved open questions:** <question> — <landing point> (Name, ~M:SS)
 ```
 
-One `##` section per affected PRFAQ, named by its exact filename. Omit empty bullets.
+One `##` section per affected PRFAQ, named by its exact filename; one nested bullet per capability under Status deltas. Omit empty bullets.
 
 ## Workflow
 

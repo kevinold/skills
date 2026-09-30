@@ -79,13 +79,13 @@ Throughout, capability status is marked. **These describe build state, never pro
 
 ### B. What's BUILT today vs PLANNED
 
-<The single most important section. One line of framing, then the table. `Where` is a REAL repo-relative path found by searching the code — not recalled. 🔵 rows may point at a design doc or plan; never leave `Where` blank or absolute.>
+<The single most important section. One line of framing, then the table. `Where` is a REAL repo-relative path found by searching the code — not recalled. 🔵 rows point at a design doc, plan, or the meeting summary that named it; never leave `Where` blank or absolute.>
 
 | Capability | Status | Where |
 |---|---|---|
 | <Capability that works in dev today> | 🟢 BUILT | `<real/code/path/>` |
 | <Built but not wired end-to-end> | 🟡 PARTIAL | `<real/code/path/>` |
-| <Designed, not built> | 🔵 PLANNED | `<docs/plans/... or design doc>` |
+| <Designed, not built> | 🔵 PLANNED | `<design doc, plan, or ../meeting-notes/.../summary.md>` |
 
 **Q: What can I actually do right now?**
 <The honest BUILT answer — what works in a dev sandbox, and what is actually in production.>
