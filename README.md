@@ -20,6 +20,8 @@ A project-level install lands in the repo, for example `.claude/skills/<name>/` 
 | Skill | What it does |
 | --- | --- |
 | [`multi-worker-pm`](skills/multi-worker-pm/SKILL.md) | Runs one agent session as an autonomous PM over up to 3 parallel worker agents in herdr panes. It works backlog issues, tends stalled Renovate PRs, or drives a spine epic's sub-issues as gated sequential lanes. |
+| [`meeting-notes`](skills/meeting-notes/SKILL.md) | Files a meeting transcript into `docs/meeting-notes/<series>/<date>/` and writes a PM-grade summary with speaker and timestamp attributions. It can watch the recording to add a PII-gated screen-share timeline, and ends with PRFAQ refinements and candidates. |
+| [`prfaq`](skills/prfaq/SKILL.md) | Writes a status-honest PRFAQ (Markdown plus a self-contained HTML twin) in `docs/prfaqs/`, or applies a meeting's refinements to an existing one. |
 
 ## multi-worker-pm
 
@@ -78,11 +80,56 @@ Updating the skill during a spine campaign changes the config digest, so the nex
 /multi-worker-pm --mode spine <epic|plan>   # sequential gated lanes for one epic
 ```
 
+## meeting-notes
+
+### Prerequisites
+
+| Requirement | Why |
+| --- | --- |
+| `textutil` (macOS) or `pandoc` | Converts `.docx` transcript exports. Without either, the docx is still filed and the summary notes the transcript wasn't extractable. |
+| [`watch`](https://github.com/bradautomates/claude-video) (optional) | Needed only to read a meeting recording. Install with `npx skills add bradautomates/claude-video`, or in Claude Code `/plugin marketplace add bradautomates/claude-video` then `/plugin install watch@claude-video`. Without it, recordings are skipped with an install hint; screenshots still work. |
+| `ffmpeg`, `ffprobe`, `yt-dlp`, `python3` | Used by `watch`. Its setup script installs them on first run. |
+| [`prfaq`](#prfaq) (recommended) | Turns the summary's PRFAQ candidates and refinements into documents. |
+
+The video pass always runs `watch` with `--no-whisper`, so meeting audio is never sent to a transcription API.
+
+### Configuration
+
+None. The skill writes to `docs/meeting-notes/` and, when the repo has one, updates `CONCEPTS.md` with the meeting's vocabulary decisions.
+
+### Usage
+
+```text
+file this meeting                                # a .docx/.md/.txt at the docs/meeting-notes/ root
+file this meeting and watch ~/Movies/sync.mp4    # add the screen-share timeline
+add the screen timeline for product-sync 2026-06-08 from <recording or screenshots>
+```
+
+Committed frames go through a PII gate. Only diagrams, public pages and dev/test data are proposed, and you approve the list once before anything is copied into `assets/`. Recordings are never copied into the repo.
+
+## prfaq
+
+### Prerequisites
+
+None beyond the agent. `.docx` inputs use `textutil` or `pandoc`, as in meeting-notes.
+
+### Configuration
+
+None. PRFAQs live in `docs/prfaqs/`, indexed by `docs/prfaqs/README.md`.
+
+### Usage
+
+```text
+/prfaq <candidate from a meeting summary>
+/prfaq docs/meeting-notes/<series>/<date>/<date>-prfaq-refinements.md   # update existing PRFAQs
+/prfaq <feature discussed in this conversation>
+```
+
 ## Adding a skill
 
 1. Create `skills/<name>/SKILL.md` with `name` and `description` frontmatter. Put any scripts or references it needs inside that folder, and refer to them relative to the skill directory. Installs copy only the folder.
 2. Check discovery: `npx skills add . --list`.
-3. Add tests as `skills/<name>/**/*.test.mjs`. `npm test` runs them under a globally frozen clock (`test/setup.mjs`).
+3. Add tests as `skills/<name>/**/*.test.mjs`, or in `test/` for checks that span skills. `npm test` runs them under a globally frozen clock (`test/setup.mjs`).
 4. Add a row to the Skills table above.
 
 ## Development
