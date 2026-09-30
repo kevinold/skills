@@ -13,6 +13,15 @@ npx skills add kevinold/skills -g                       # user-level instead of 
 npx skills update                                       # pull the latest versions
 ```
 
+To also get [claude-video](https://github.com/bradautomates/claude-video), which `meeting-notes` needs to read meeting recordings, use the bootstrap script. It runs the same `npx skills add` with your arguments, then asks whether to install claude-video for the same agents and scope:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/kevinold/skills/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/kevinold/skills/main/install.sh | bash -s -- -g --with-video   # no prompt
+```
+
+`--with-video` and `--no-video` skip the question. It isn't asked when `-s` leaves out `meeting-notes`, or when there's no terminal to ask on.
+
 A project-level install lands in the repo, for example `.claude/skills/<name>/` or `.agents/skills/<name>/`. Commit it so teammates' agents get the same version.
 
 ## Skills
@@ -87,7 +96,7 @@ Updating the skill during a spine campaign changes the config digest, so the nex
 | Requirement | Why |
 | --- | --- |
 | `textutil` (macOS) or `pandoc` | Converts `.docx` transcript exports. Without either, the docx is still filed and the summary notes the transcript wasn't extractable. |
-| [`watch`](https://github.com/bradautomates/claude-video) (optional) | Needed only to read a meeting recording. Install with `npx skills add bradautomates/claude-video`, or in Claude Code `/plugin marketplace add bradautomates/claude-video` then `/plugin install watch@claude-video`. Without it, recordings are skipped with an install hint; screenshots still work. |
+| [`watch`](https://github.com/bradautomates/claude-video) (optional) | Needed only to read a meeting recording. The bootstrap script above offers it. Otherwise install with `npx skills add bradautomates/claude-video`, or in Claude Code `/plugin marketplace add bradautomates/claude-video` then `/plugin install watch@claude-video`. Without it, recordings are skipped with an install hint; screenshots still work. |
 | `ffmpeg`, `ffprobe`, `yt-dlp`, `python3` | Used by `watch`. Its setup script installs them on first run. |
 | [`prfaq`](#prfaq) (recommended) | Turns the summary's PRFAQ candidates and refinements into documents. |
 
