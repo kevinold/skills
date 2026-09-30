@@ -44,7 +44,9 @@ Delete the temp parent when the pass ends, whether it succeeded or failed. If an
 
 ### 1. Scan
 
-Get the duration from `ffprobe`, or from the notetaker summary's recording length. Scan timestamps are every 60 s, **plus** every moment the transcript flags a share ("sharing my screen", "can you see this", "let me show you", "look at this"), plus 10 s after each. A share shorter than a minute is only caught by those cues.
+Get the duration from `ffprobe`, or from the notetaker summary's recording length. Scan timestamps are every 60 s, **plus** every moment the transcript flags a share ("sharing my screen", "can you see this", "let me show you", "look at this"), 10 s before and 10 s after. A share shorter than a minute is only caught by those cues.
+
+Transcript times and recording times often differ. Shift each cue by the offset from the timeline's **Clock** line: the notetaker's recording start, or the first frame showing a speaker who opens the transcript. When the offset is unknown, widen each cue to 30 s before and after.
 
 Read every frame. Mark the **share windows** — spans where a screen, not just camera tiles, fills the frame. For a URL, the scan's download lands under `<tmp>/pass-00/download/`; every later call reads that local file, never the URL again.
 
@@ -129,7 +131,7 @@ Add one line to the summary's metadata block:
 
 `**Recording + screen timeline:** <recording basename, or "notetaker screenshots"> → [<date>-screen-timeline.md](<date>-screen-timeline.md)`
 
-In **video-pass-only** mode (the meeting was already filed), that line and the new files are the only changes. Do not regenerate the summary, change its H2 headings, or delete frames a committed doc links to. A second recording or screenshot set for a date that already has a timeline gets `<date>-screen-timeline-2.md` (then `-3`, …) and its own metadata line.
+In **video-pass-only** mode (the meeting was already filed), that line and the new files are the only changes. Do not regenerate the summary, change its H2 headings, or delete frames a committed doc links to. A second recording or screenshot set for a date that already has a timeline gets `<date>-screen-timeline-2.md` (then `-3`, …), its own metadata line, and its own frame folder `assets/video-frames-2/` (then `-3`, …). Never overwrite an existing file in `assets/`.
 
 ## Finish
 

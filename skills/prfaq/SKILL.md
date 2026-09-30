@@ -69,7 +69,7 @@ For each `## <name>-prfaq.md` section of a refinements file (or the one PRFAQ th
 2. **Re-check every status row against the code**, not just the rows the refinements name. Code moves between meetings; update the marker and `Where` path to what the search shows.
 3. Apply the claim changes. Then re-read the Press Release and FAQ prose against the updated table — prose lags tables; fix any sentence that now contradicts a marker.
 4. Move resolved open questions into the FAQ answer they settled (with the citation); add the new open questions.
-5. Add the meeting to the Source index under **Meeting updates**.
+5. Add the meeting to the Source index under **Meeting updates**. If this makes the PRFAQ cite a second meeting, rewrite its existing `(Name, ~M:SS)` citations as `(Name, <original meeting date>, ~M:SS)` in both files.
 6. Rebuild the changed parts of the HTML twin from the updated Markdown, keeping parity. Keep existing heading text and anchor ids.
 7. Update the README row's one-liner if the thesis changed.
 

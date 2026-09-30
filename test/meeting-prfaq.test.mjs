@@ -10,6 +10,7 @@ import { describe, expect, it } from "vitest";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SKILLS = ["meeting-notes", "prfaq"].map((s) => join(ROOT, "skills", s));
 const PLAN = join(ROOT, "docs/plans/2026-09-30-0939-feat-meeting-notes-prfaq-skills-plan.md");
+const README = join(ROOT, "README.md");
 
 const walk = (dir) =>
   readdirSync(dir).flatMap((f) => {
@@ -72,7 +73,7 @@ export const sweepPrivate = (name, src, hashes = PRIVATE) =>
   lineHits(name, src, (l) => ngrams(l).some((g) => hashes.has(sha(g))));
 
 describe("no private-source name in the skills or this plan (R3)", () => {
-  it.each([...FILES, PLAN].map(rel))("%s is clean", (f) => {
+  it.each([...FILES, PLAN, README].map(rel))("%s is clean", (f) => {
     expect(sweepPrivate(f, read(join(ROOT, f)))).toEqual([]);
   });
 
@@ -130,7 +131,7 @@ const ABSOLUTE = /\/Users\/|\/home\/[a-z]|file:\/\/\/|[A-Z]:\\Users\\/;
 export const absoluteHits = (name, src) => lineHits(name, src, (l) => ABSOLUTE.test(l));
 
 describe("no absolute local paths in the skills", () => {
-  it.each(FILES.map(rel))("%s", (f) => {
+  it.each([...FILES, README].map(rel))("%s", (f) => {
     expect(absoluteHits(f, read(join(ROOT, f)))).toEqual([]);
   });
 
