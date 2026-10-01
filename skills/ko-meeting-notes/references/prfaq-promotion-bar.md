@@ -1,10 +1,10 @@
 # PRFAQ promotion bar — what earns a standalone PRFAQ, and how it's structured
 
-The reusable recipe for turning meeting notes into PRFAQ artifacts. `meeting-notes` and `prfaq` each ship an identical copy of this file. A PRFAQ is not a spec and not a plan. A spec says how to build; a plan sequences the work; a PRFAQ explains the feature to every role at once (ops, GTM/leadership, engineering) and is honest about what's already real versus aspirational. Its defining job is to **end recurring confusion** — every section earns its place by resolving something people kept getting tangled on.
+The reusable recipe for turning meeting notes into PRFAQ artifacts. `ko-meeting-notes` and `ko-prfaq` each ship an identical copy of this file. A PRFAQ is not a spec and not a plan. A spec says how to build; a plan sequences the work; a PRFAQ explains the feature to every role at once (ops, GTM/leadership, engineering) and is honest about what's already real versus aspirational. Its defining job is to **end recurring confusion** — every section earns its place by resolving something people kept getting tangled on.
 
 ## 1. Identify the inputs
 
-Expect a meeting transcript (frequently a `.docx`, which is not deep-linkable) or a `<date>-summary.md` written by `meeting-notes`. Optionally expect a structured "priority projects" note that has already tagged features as **Big** or **Small** with an effort estimate and a Problem/MVP/Prerequisite framing. The transcript is the source of debates, quotes, and open questions; the priority note is the source of problem framing and the selection filter.
+Expect a meeting transcript (frequently a `.docx`, which is not deep-linkable) or a `<date>-summary.md` written by `ko-meeting-notes`. Optionally expect a structured "priority projects" note that has already tagged features as **Big** or **Small** with an effort estimate and a Problem/MVP/Prerequisite framing. The transcript is the source of debates, quotes, and open questions; the priority note is the source of problem framing and the selection filter.
 
 ## 2. The selection bar — one PRFAQ per qualifying feature
 
@@ -24,7 +24,7 @@ Do not start writing until you've confirmed:
 
 ## 4. PRFAQ anatomy
 
-Follow `prfaq-template.md` in the `prfaq` skill. Every Markdown PRFAQ has, in order: title + bold one-sentence definition; a "How to read this" block (PR = vision, FAQ = ground truth) with the status legend; Part 1 Press Release (headline, narrative, real transcript pull-quotes cited *(Speaker, ~M:SS)*, and exactly one clearly-labeled *illustrative* testimonial); Part 2 FAQ (grouped A/B/C… sections, each answer status-marked, always including a "What's BUILT today vs PLANNED" table and an "Open questions still being decided" block); Appendix (glossary + source index).
+Follow `prfaq-template.md` in the `ko-prfaq` skill. Every Markdown PRFAQ has, in order: title + bold one-sentence definition; a "How to read this" block (PR = vision, FAQ = ground truth) with the status legend; Part 1 Press Release (headline, narrative, real transcript pull-quotes cited *(Speaker, ~M:SS)*, and exactly one clearly-labeled *illustrative* testimonial); Part 2 FAQ (grouped A/B/C… sections, each answer status-marked, always including a "What's BUILT today vs PLANNED" table and an "Open questions still being decided" block); Appendix (glossary + source index).
 
 The status legend describes build state, never production:
 
@@ -40,7 +40,7 @@ Before assigning 🟢/🟡/🔵 to any capability, search the codebase for what 
 
 ## 6. Ship a dual deliverable: canonical Markdown + a self-contained HTML twin
 
-Write the Markdown first (it is canonical), then hand-author an HTML twin from the `prfaq` skill's HTML shell:
+Write the Markdown first (it is canonical), then hand-author an HTML twin from the `ko-prfaq` skill's HTML shell:
 
 - A **single `.html` file** with all CSS/JS inline, **no external dependencies/CDNs/fonts** (system font stack), rendering offline.
 - **Colored status chips** (not emoji-in-prose), the BUILT-vs-PLANNED table and any comparison rendered as real tables/grids, a **collapsible `<details>` FAQ**, a **sticky in-page jump-nav**, the Open Questions block as a distinct callout panel, and **one signature inline-SVG diagram per feature** capturing its most spatial idea.

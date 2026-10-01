@@ -7,13 +7,13 @@ Kevin Old's shared coding-agent skills. One command installs them into every age
 ```bash
 npx skills add kevinold/skills                          # pick skills and agents interactively
 npx skills add kevinold/skills --all                    # every skill, every detected agent, no prompts
-npx skills add kevinold/skills -s multi-worker-pm       # one skill
+npx skills add kevinold/skills -s ko-multi-worker-pm       # one skill
 npx skills add kevinold/skills -a claude-code codex     # specific agents
 npx skills add kevinold/skills -g                       # user-level instead of this project
 npx skills update                                       # pull the latest versions
 ```
 
-`meeting-notes` needs [claude-video](https://github.com/bradautomates/claude-video) to read meeting recordings. Transcripts, summaries and screenshot timelines work without it. There are two ways to get it.
+`ko-meeting-notes` needs [claude-video](https://github.com/bradautomates/claude-video) to read meeting recordings. Transcripts, summaries and screenshot timelines work without it. There are two ways to get it.
 
 Install it yourself, with the same agent and scope flags you used above:
 
@@ -28,11 +28,13 @@ curl -fsSL https://raw.githubusercontent.com/kevinold/skills/main/install.sh | b
 curl -fsSL https://raw.githubusercontent.com/kevinold/skills/main/install.sh | bash -s -- -g --with-video   # no prompt
 ```
 
-`--with-video` and `--no-video` answer the question up front. The script doesn't ask when `-s` leaves out `meeting-notes`, or when there's no terminal to ask on. Claude Code users who already installed `watch` from the plugin marketplace should answer no.
+`--with-video` and `--no-video` answer the question up front. The script doesn't ask when `-s` leaves out `ko-meeting-notes`, or when there's no terminal to ask on. Claude Code users who already installed `watch` from the plugin marketplace should answer no.
 
 ### Upgrading
 
-`npx skills update` updates only the skills already installed. Run it to get new versions of those, including claude-video if you installed it with the skills CLI. It doesn't add skills that are new to this repo; install those by name, e.g. `npx skills add kevinold/skills -s meeting-notes -s prfaq`. If you already have a hand-made skill with the same name, such as `~/.claude/skills/meeting-notes`, installing over it can overwrite it, so back up local edits first.
+`npx skills update` updates only the skills already installed. Run it to get new versions of those, including claude-video if you installed it with the skills CLI. It doesn't add skills that are new to this repo; install those by name, e.g. `npx skills add kevinold/skills -s ko-meeting-notes -s ko-prfaq`. Every skill here is named `ko-<name>`, so it won't collide with a hand-made or third-party skill such as `~/.claude/skills/meeting-notes`.
+
+**Renamed skills.** `multi-worker-pm` is now `ko-multi-worker-pm`. `skills update` won't rename an existing install, so run `npx skills remove multi-worker-pm` and then `npx skills add kevinold/skills -s ko-multi-worker-pm`. Invoke it as `/ko-multi-worker-pm`. Its repo config file is still `.multi-worker-pm.json`.
 
 A project-level install lands in the repo, for example `.claude/skills/<name>/` or `.agents/skills/<name>/`. Commit it so teammates' agents get the same version.
 
@@ -40,11 +42,11 @@ A project-level install lands in the repo, for example `.claude/skills/<name>/` 
 
 | Skill | What it does |
 | --- | --- |
-| [`multi-worker-pm`](skills/multi-worker-pm/SKILL.md) | Runs one agent session as an autonomous PM over up to 3 parallel worker agents in herdr panes. It works backlog issues, tends stalled Renovate PRs, or drives a spine epic's sub-issues as gated sequential lanes. |
-| [`meeting-notes`](skills/meeting-notes/SKILL.md) | Files a meeting transcript into `docs/meeting-notes/<series>/<date>/` and writes a PM-grade summary with speaker and timestamp attributions. It can watch the recording to add a PII-gated screen-share timeline, and ends with PRFAQ refinements and candidates. |
-| [`prfaq`](skills/prfaq/SKILL.md) | Writes a status-honest PRFAQ (Markdown plus a self-contained HTML twin) in `docs/prfaqs/`, or applies a meeting's refinements to an existing one. |
+| [`ko-multi-worker-pm`](skills/ko-multi-worker-pm/SKILL.md) | Runs one agent session as an autonomous PM over up to 3 parallel worker agents in herdr panes. It works backlog issues, tends stalled Renovate PRs, or drives a spine epic's sub-issues as gated sequential lanes. |
+| [`ko-meeting-notes`](skills/ko-meeting-notes/SKILL.md) | Files a meeting transcript into `docs/meeting-notes/<series>/<date>/` and writes a PM-grade summary with speaker and timestamp attributions. It can watch the recording to add a PII-gated screen-share timeline, and ends with PRFAQ refinements and candidates. |
+| [`ko-prfaq`](skills/ko-prfaq/SKILL.md) | Writes a status-honest PRFAQ (Markdown plus a self-contained HTML twin) in `docs/prfaqs/`, or applies a meeting's refinements to an existing one. |
 
-## multi-worker-pm
+## ko-multi-worker-pm
 
 ### Prerequisites
 
@@ -65,7 +67,7 @@ The PM reads `.multi-worker-pm.json` at the root of the primary checkout. Withou
 
 Spine mode refuses to start until `identity.expectedAuthors` is set, because those accounts are the only ones trusted to post lane `state:` comments.
 
-Copy [`config.example.json`](skills/multi-worker-pm/config.example.json) to start. The keys:
+Copy [`config.example.json`](skills/ko-multi-worker-pm/config.example.json) to start. The keys:
 
 | Key | Default | Meaning |
 | --- | --- | --- |
@@ -95,13 +97,13 @@ Updating the skill during a spine campaign changes the config digest, so the nex
 ### Usage
 
 ```text
-/multi-worker-pm --dry-run                  # preview what would spawn, no pool
-/multi-worker-pm                            # issue lane, pool cap 3
-/multi-worker-pm --mode renovate            # tend stalled dependency PRs
-/multi-worker-pm --mode spine <epic|plan>   # sequential gated lanes for one epic
+/ko-multi-worker-pm --dry-run                  # preview what would spawn, no pool
+/ko-multi-worker-pm                            # issue lane, pool cap 3
+/ko-multi-worker-pm --mode renovate            # tend stalled dependency PRs
+/ko-multi-worker-pm --mode spine <epic|plan>   # sequential gated lanes for one epic
 ```
 
-## meeting-notes
+## ko-meeting-notes
 
 ### Prerequisites
 
@@ -110,7 +112,7 @@ Updating the skill during a spine campaign changes the config digest, so the nex
 | `textutil` (macOS) or `pandoc` | Converts `.docx` transcript exports. Without either, the docx is still filed and the summary notes the transcript wasn't extractable. |
 | [`watch`](https://github.com/bradautomates/claude-video) (optional) | Needed only to read a meeting recording. The bootstrap script above offers it. Otherwise install with `npx skills add bradautomates/claude-video`, or in Claude Code `/plugin marketplace add bradautomates/claude-video` then `/plugin install watch@claude-video`. Without it, recordings are skipped with an install hint; screenshots still work. |
 | `ffmpeg`, `ffprobe`, `yt-dlp`, `python3` | Used by `watch`. Its setup script installs them on first run. |
-| [`prfaq`](#prfaq) (recommended) | Turns the summary's PRFAQ candidates and refinements into documents. |
+| [`ko-prfaq`](#ko-prfaq) (recommended) | Turns the summary's PRFAQ candidates and refinements into documents. |
 
 The video pass always runs `watch` with `--no-whisper`, so meeting audio is never sent to a transcription API.
 
@@ -128,11 +130,11 @@ add the screen timeline for product-sync 2026-06-08 from <recording or screensho
 
 Committed frames go through a PII gate. Only diagrams, public pages and dev/test data are proposed, and you approve the list once before anything is copied into `assets/`. Recordings are never copied into the repo.
 
-## prfaq
+## ko-prfaq
 
 ### Prerequisites
 
-None beyond the agent. `.docx` inputs use `textutil` or `pandoc`, as in meeting-notes.
+None beyond the agent. `.docx` inputs use `textutil` or `pandoc`, as in ko-meeting-notes.
 
 ### Configuration
 
@@ -141,14 +143,14 @@ None. PRFAQs live in `docs/prfaqs/`, indexed by `docs/prfaqs/README.md`.
 ### Usage
 
 ```text
-/prfaq <candidate from a meeting summary>
-/prfaq docs/meeting-notes/<series>/<date>/<date>-prfaq-refinements.md   # update existing PRFAQs
-/prfaq <feature discussed in this conversation>
+/ko-prfaq <candidate from a meeting summary>
+/ko-prfaq docs/meeting-notes/<series>/<date>/<date>-prfaq-refinements.md   # update existing PRFAQs
+/ko-prfaq <feature discussed in this conversation>
 ```
 
 ## Adding a skill
 
-1. Create `skills/<name>/SKILL.md` with `name` and `description` frontmatter. Put any scripts or references it needs inside that folder, and refer to them relative to the skill directory. Installs copy only the folder.
+1. Create `skills/ko-<name>/SKILL.md` with `name: ko-<name>` and `description` frontmatter. Every skill carries the `ko-` prefix so it never collides with another package's skill; `test/skill-names.test.mjs` enforces it. Put any scripts or references it needs inside that folder, and refer to them relative to the skill directory. Installs copy only the folder.
 2. Check discovery: `npx skills add . --list`.
 3. Add tests as `skills/<name>/**/*.test.mjs`, or in `test/` for checks that span skills. `npm test` runs them under a globally frozen clock (`test/setup.mjs`).
 4. Add a row to the Skills table above.

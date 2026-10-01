@@ -1,6 +1,6 @@
 ---
-name: prfaq
-description: Generate or update a PRFAQ (Amazon-style Press Release + FAQ) pair — canonical Markdown plus self-contained HTML twin — in docs/prfaqs/, following a status-honest, codebase-grounded format. Use when the user asks for a PRFAQ, says "/prfaq", wants meeting notes or a transcript turned into a PRFAQ, wants a meeting's prfaq-refinements file applied to existing PRFAQs, or wants an existing draft converted into the docs/prfaqs format. Input is usually a meeting summary from the meeting-notes skill, a transcript, a refinements file, or a feature discussion.
+name: ko-prfaq
+description: Generate or update a PRFAQ (Amazon-style Press Release + FAQ) pair — canonical Markdown plus self-contained HTML twin — in docs/prfaqs/, following a status-honest, codebase-grounded format. Use when the user asks for a PRFAQ, says "/ko-prfaq", wants meeting notes or a transcript turned into a PRFAQ, wants a meeting's prfaq-refinements file applied to existing PRFAQs, or wants an existing draft converted into the docs/prfaqs format. Input is usually a meeting summary from the ko-meeting-notes skill, a transcript, a refinements file, or a feature discussion.
 ---
 
 # PRFAQ Generator
@@ -11,8 +11,8 @@ Produce a feature PRFAQ as a **Markdown doc (canonical) + self-contained HTML tw
 
 | Input | Mode |
 |---|---|
-| A `<date>-summary.md` from `meeting-notes`, a named candidate from its closing section, a transcript (`.docx` via `textutil -convert txt -stdout` or `pandoc -t plain`, or `.md`), or a feature discussion in conversation | **Create** |
-| A `<date>-prfaq-refinements.md` from `meeting-notes`, or the name of an existing PRFAQ plus new source material | **Update** |
+| A `<date>-summary.md` from `ko-meeting-notes`, a named candidate from its closing section, a transcript (`.docx` via `textutil -convert txt -stdout` or `pandoc -t plain`, or `.md`), or a feature discussion in conversation | **Create** |
+| A `<date>-prfaq-refinements.md` from `ko-meeting-notes`, or the name of an existing PRFAQ plus new source material | **Update** |
 | An existing draft in another format | **Create** (convert it) |
 
 If no source material is given, ask for it — a PRFAQ without source quotes and real examples is filler.

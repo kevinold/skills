@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Install kevinold/skills, then offer claude-video (the `watch` skill), which
-# meeting-notes needs to read meeting recordings.
+# ko-meeting-notes needs to read meeting recordings.
 #
 #   curl -fsSL https://raw.githubusercontent.com/kevinold/skills/main/install.sh | bash
 #   ./install.sh [skills add args...] [--with-video | --no-video]
@@ -35,15 +35,15 @@ done
 
 npx -y skills add "$SOURCE" ${args[@]+"${args[@]}"}
 
-# Only meeting-notes uses claude-video; skip the offer when it wasn't installed.
-if [ ${#skills[@]} -gt 0 ] && [[ " ${skills[*]} " != *" meeting-notes "* ]]; then
+# Only ko-meeting-notes uses claude-video; skip the offer when it wasn't installed.
+if [ ${#skills[@]} -gt 0 ] && [[ " ${skills[*]} " != *" ko-meeting-notes "* ]]; then
   exit 0
 fi
 
 if [ "$video" = ask ]; then
   # Read from the terminal, not stdin, so `curl ... | bash` can still prompt.
   if { exec 3<"${KEVINOLD_SKILLS_TTY:-/dev/tty}"; } 2>/dev/null; then
-    printf 'Also install claude-video (%s) so meeting-notes can read meeting recordings? [Y/n] ' "$VIDEO_SOURCE" >&2
+    printf 'Also install claude-video (%s) so ko-meeting-notes can read meeting recordings? [Y/n] ' "$VIDEO_SOURCE" >&2
     read -r reply <&3 || reply=
     exec 3<&-
     case "$reply" in [nN]*) video=no ;; *) video=yes ;; esac

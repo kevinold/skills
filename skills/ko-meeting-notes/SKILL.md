@@ -1,6 +1,6 @@
 ---
-name: meeting-notes
-description: File a raw meeting document (Teams/Zoom/Meet transcript .docx, or .md/.txt) into a docs/meeting-notes/ series/date taxonomy and write a PM-grade summary — decisions, competing ideas, disagreements with landing points, open questions, insights — with speaker + timestamp attributions, ending with PRFAQ refinements and candidates for the prfaq skill. Optionally watches the meeting recording (or reads notetaker screenshots) to add a PII-gated screen-share timeline. Use when the user drops a meeting transcript, says "file this meeting", "summarize this transcript", "watch the recording", or "add the screen timeline", wants meeting notes organized, or wants to backfill a summary for an already-filed meeting.
+name: ko-meeting-notes
+description: File a raw meeting document (Teams/Zoom/Meet transcript .docx, or .md/.txt) into a docs/meeting-notes/ series/date taxonomy and write a PM-grade summary — decisions, competing ideas, disagreements with landing points, open questions, insights — with speaker + timestamp attributions, ending with PRFAQ refinements and candidates for the ko-prfaq skill. Optionally watches the meeting recording (or reads notetaker screenshots) to add a PII-gated screen-share timeline. Use when the user drops a meeting transcript, says "file this meeting", "summarize this transcript", "watch the recording", or "add the screen timeline", wants meeting notes organized, or wants to backfill a summary for an already-filed meeting.
 ---
 
 # Meeting Notes — File & Summarize
@@ -91,13 +91,13 @@ Meetings are where domain vocabulary is born, renamed, locked, or retired. Every
 Before writing the summary's closing section, scan `docs/prfaqs/README.md` (if present) **and** glob `docs/prfaqs/*-prfaq.md` (catches unregistered docs). Split what the meeting produced, per [references/prfaq-promotion-bar.md](./references/prfaq-promotion-bar.md):
 
 - **Refinements to existing PRFAQs** — the meeting re-debated a topic that already has a PRFAQ. Offer a `<date>-prfaq-refinements.md` side artifact in the shape below. Don't pitch a duplicate PRFAQ.
-- **Net-new candidates** — only initiatives that clear the promotion bar (**big/major AND cross-team AND genuinely debated in the transcript**). Small items fold into existing PRFAQs as dependencies. Name each candidate and offer to run the `prfaq` skill — never auto-generate.
+- **Net-new candidates** — only initiatives that clear the promotion bar (**big/major AND cross-team AND genuinely debated in the transcript**). Small items fold into existing PRFAQs as dependencies. Name each candidate and offer to run the `ko-prfaq` skill — never auto-generate.
 
-If the `prfaq` skill isn't installed, still write the closing section (and the refinements file when offered and accepted), then print one install line: `npx skills add kevinold/skills -s prfaq`.
+If the `ko-prfaq` skill isn't installed, still write the closing section (and the refinements file when offered and accepted), then print one install line: `npx skills add kevinold/skills -s ko-prfaq`.
 
 ### Refinements file shape
 
-`prfaq` consumes this file in its update mode, so keep the shape exact:
+`ko-prfaq` consumes this file in its update mode, so keep the shape exact:
 
 ```markdown
 # PRFAQ refinements — <Series> (<YYYY-MM-DD>)
@@ -124,5 +124,5 @@ One `##` section per affected PRFAQ, named by its exact filename; one nested bul
 5. If a recording or screenshots were supplied, run the video pass (`references/video-pass.md`).
 6. Run the attribution verification pass over the summary and timeline — zero misses.
 7. If `CONCEPTS.md` exists, persist canonical-vocabulary decisions to it in the same change.
-8. Scan + glob `docs/prfaqs/`; write the closing refinements-vs-candidates split; offer the `prfaq` skill for candidates and refinements.
+8. Scan + glob `docs/prfaqs/`; write the closing refinements-vs-candidates split; offer the `ko-prfaq` skill for candidates and refinements.
 9. Before offering a commit, confirm no recording or file over 5 MB is staged. Offer (don't auto-run) a `docs:` commit, following the project's own branch/PR conventions. Include the `CONCEPTS.md` change in that commit.

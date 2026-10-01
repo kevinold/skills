@@ -1,6 +1,6 @@
 # Spine mode — generic mechanics
 
-`multi-worker-pm --mode spine <epic|plan>` runs any spine campaign — a GitHub
+`ko-multi-worker-pm --mode spine <epic|plan>` runs any spine campaign — a GitHub
 epic whose native sub-issues are ordered, single-worker lanes — from the epic
 alone, unattended, with a start gate, one lane in flight, a pre-merge
 checklist, a post-merge health bar, and resumable `state:` comments. Swap in
@@ -372,10 +372,10 @@ with a non-empty `workerEnvFiles`, row 4 only with a configured `denyHook`.
 
 One script runs a GitHub mutation, and only under an explicit env token:
 
-- `Bash(SPINE_AUTO_MERGE=yes bash .claude/skills/multi-worker-pm/scripts/merge-lane.sh *)`
+- `Bash(SPINE_AUTO_MERGE=yes bash .claude/skills/ko-multi-worker-pm/scripts/merge-lane.sh *)`
 
 That is the project-level install path; a global install pins
-`~/.claude/skills/multi-worker-pm/scripts/merge-lane.sh`, and other agents their
+`~/.claude/skills/ko-multi-worker-pm/scripts/merge-lane.sh`, and other agents their
 own skills dir. The allow rule lives **only** in a PM-session-scoped setting — never the
 repo's `.claude/settings.json` that worker sessions inherit at spawn — and is
 removed at close-out. `merge-lane.sh` and `close-lane.sh` both refuse to run

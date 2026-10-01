@@ -1,5 +1,5 @@
 ---
-name: multi-worker-pm
+name: ko-multi-worker-pm
 description: Run one coding-agent session as an autonomous project manager over a pool of parallel worker agents in labeled herdr tabs — select autonomously-scoped GitHub issues (or stalled Renovate PRs, or a spine epic's sequential lanes), spawn herdr-launched workers (config `workerKind`, default claude) that run compound-engineering's /ce-worktree + /lfg or /ce-babysit-pr, unblock them under a strict approval policy, reclaim finished workers, and backfill. Use when asked to run the multi-worker PM, work the backlog with parallel workers, tend Renovate PRs, drive a spine epic, or spawn a worker pool on open issues.
 argument-hint: "[--mode issues|renovate|spine] [--cap N] [epic|plan] [label-filter] [--dry-run]"
 ---
@@ -21,7 +21,7 @@ You are the PM session (**MWPM**) for a pool of up to **3** worker agents, each 
 
 ## Locating helpers
 
-`<skill-dir>` is the directory containing this SKILL.md — resolve it from where you loaded the skill (e.g. `.claude/skills/multi-worker-pm`, `.agents/skills/multi-worker-pm`, or a global `~/.claude/skills/multi-worker-pm`). Deterministic logic lives in `<skill-dir>/scripts/`: run every helper as `node <skill-dir>/scripts/run.mjs <select|classify|spine> [...]` or `bash <skill-dir>/scripts/<x>.sh [...]`, with cwd inside the consumer repo's checkout — never relative to the consumer repo's root. The spine shell helpers that act on the primary (`pull-primary.sh`, `spawn-worker.sh`, `watch-worker.sh`, `close-lane.sh`) need it named: pass `--primary <primary>` (or prefix `SPINE_PRIMARY=<primary>`), since shell variables do not survive between Bash calls.
+`<skill-dir>` is the directory containing this SKILL.md — resolve it from where you loaded the skill (e.g. `.claude/skills/ko-multi-worker-pm`, `.agents/skills/ko-multi-worker-pm`, or a global `~/.claude/skills/ko-multi-worker-pm`). Deterministic logic lives in `<skill-dir>/scripts/`: run every helper as `node <skill-dir>/scripts/run.mjs <select|classify|spine> [...]` or `bash <skill-dir>/scripts/<x>.sh [...]`, with cwd inside the consumer repo's checkout — never relative to the consumer repo's root. The spine shell helpers that act on the primary (`pull-primary.sh`, `spawn-worker.sh`, `watch-worker.sh`, `close-lane.sh`) need it named: pass `--primary <primary>` (or prefix `SPINE_PRIMARY=<primary>`), since shell variables do not survive between Bash calls.
 
 Repo facts live in `<primary>/.multi-worker-pm.json` (see `<skill-dir>/config.example.json`); with no file every command runs on neutral defaults — base branch `main`, `protectedBranches` `[main]`, at least one reported check green and none red (skipped counts as passing), push-mode post-merge bar, no worker env files, `workerKind` `claude`. Spine mode refuses without `identity.expectedAuthors` (`config-missing: identity.expectedAuthors`). Workers need the compound-engineering plugin (`/ce-worktree`, `/lfg`, `/ce-babysit-pr`) and run inside herdr. The worker prompt always sends those commands, so a non-default `workerKind` must be an agent that has them.
 
@@ -111,7 +111,7 @@ Start the agent in `.result.root_pane.pane_id`. Record `tab_id`, `workspace_id`,
 test "${HERDR_ENV:-}" = 1 || echo "STOP: not inside a herdr pane"   # --dry-run is exempt
 command -v herdr && herdr --skill | head -40                        # learn the live CLI surface; do not trust memory
 gh auth status                                                       # required, including for --dry-run
-test -e <skill-dir>/scripts/run.mjs || echo "STOP: helpers missing — <skill-dir> is not the multi-worker-pm skill directory"
+test -e <skill-dir>/scripts/run.mjs || echo "STOP: helpers missing — <skill-dir> is not the ko-multi-worker-pm skill directory"
 node <skill-dir>/scripts/run.mjs spine config --digest               # every run prints `config: <path|defaults> sha256:<12>` on stderr — record both
 SPAWN_CWD="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"; echo "spawn cwd: $SPAWN_CWD"
 herdr tab rename "$HERDR_TAB_ID" MWPM && herdr workspace rename "$HERDR_WORKSPACE_ID" MWPM   # label yourself (skip in --dry-run)
@@ -343,7 +343,7 @@ Worktree and credential removal (`close-lane.sh` in S8) is guaranteed on every t
 
 ### Authorizations
 
-`--auto-merge` is off by default; when off, the mode prints the exact command it would have run and waits for the operator. Its allow rule — e.g. `Bash(SPINE_AUTO_MERGE=yes bash .claude/skills/multi-worker-pm/scripts/merge-lane.sh *)` for a project-level install; a global install pins `~/.claude/skills/multi-worker-pm/scripts/merge-lane.sh`, and other agents their own skills dir — lives **only** in a PM-session-scoped setting worker sessions never inherit, and is removed at close-out. `merge-lane.sh` (and `close-lane.sh`) refuse outright when run from a worker/roster context. The literal env token is an accidental-invocation guard, not an authentication secret: the real control is that the allow rule never reaches a worker's inherited settings. Full recipe and rationale: `references/spine-mode.md` — Authorizations.
+`--auto-merge` is off by default; when off, the mode prints the exact command it would have run and waits for the operator. Its allow rule — e.g. `Bash(SPINE_AUTO_MERGE=yes bash .claude/skills/ko-multi-worker-pm/scripts/merge-lane.sh *)` for a project-level install; a global install pins `~/.claude/skills/ko-multi-worker-pm/scripts/merge-lane.sh`, and other agents their own skills dir — lives **only** in a PM-session-scoped setting worker sessions never inherit, and is removed at close-out. `merge-lane.sh` (and `close-lane.sh`) refuse outright when run from a worker/roster context. The literal env token is an accidental-invocation guard, not an authentication secret: the real control is that the allow rule never reaches a worker's inherited settings. Full recipe and rationale: `references/spine-mode.md` — Authorizations.
 
 ### Trust model
 

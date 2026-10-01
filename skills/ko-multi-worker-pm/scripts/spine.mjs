@@ -1,4 +1,4 @@
-// Spine-mode pure logic for the multi-worker-pm skill.
+// Spine-mode pure logic for the ko-multi-worker-pm skill.
 //
 // Data-in / data-out only — NO gh/herdr/git calls, NO file I/O, NO clock
 // reads. run.mjs owns the edges and the shell scripts own the side effects

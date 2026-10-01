@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Dispatcher for the multi-worker-pm skill's deterministic logic.
+// Dispatcher for the ko-multi-worker-pm skill's deterministic logic.
 //
 //   node <skill-dir>/scripts/run.mjs select [--dry-run] [--filter <label>] [--cap N] [--in-flight <json>]
 //   node <skill-dir>/scripts/run.mjs classify <prev.json> <curr.json> --roster a,b [--reclaim <json>] [--working-since <json>]

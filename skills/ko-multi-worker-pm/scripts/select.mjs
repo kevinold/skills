@@ -1,4 +1,4 @@
-// Issue selection for the multi-worker-pm skill.
+// Issue selection for the ko-multi-worker-pm skill.
 //
 // Pure functions only — no gh calls, no file I/O (run.mjs owns the edges).
 // Selection is a safety mechanism, not just ranking: parallel workers on

@@ -55,8 +55,8 @@ describe("install.sh", () => {
     expect(run(["--no-video"], { answer: "y" }).calls).toEqual(["-y skills add kevinold/skills"]);
   });
 
-  it("does not offer claude-video when meeting-notes is not being installed", () => {
-    expect(run(["-s", "multi-worker-pm"], { answer: "y" }).calls).toEqual(["-y skills add kevinold/skills -s multi-worker-pm"]);
-    expect(run(["-s", "prfaq", "meeting-notes"], { answer: "y" }).calls).toHaveLength(2);
+  it("does not offer claude-video when ko-meeting-notes is not being installed", () => {
+    expect(run(["-s", "ko-multi-worker-pm"], { answer: "y" }).calls).toEqual(["-y skills add kevinold/skills -s ko-multi-worker-pm"]);
+    expect(run(["-s", "ko-prfaq", "ko-meeting-notes"], { answer: "y" }).calls).toHaveLength(2);
   });
 });

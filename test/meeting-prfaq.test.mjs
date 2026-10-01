@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 // skill folders so consumers never install it.
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const SKILLS = ["meeting-notes", "prfaq"].map((s) => join(ROOT, "skills", s));
+const SKILLS = ["ko-meeting-notes", "ko-prfaq"].map((s) => join(ROOT, "skills", s));
 const PLAN = join(ROOT, "docs/plans/2026-09-30-0939-feat-meeting-notes-prfaq-skills-plan.md");
 const README = join(ROOT, "README.md");
 

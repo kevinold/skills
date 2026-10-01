@@ -1,4 +1,4 @@
-// Per-tick worker classification for the multi-worker-pm skill.
+// Per-tick worker classification for the ko-multi-worker-pm skill.
 //
 // Pure: snapshots, timestamps, and roster in — actions out. The edge (the PM
 // session following SKILL.md) captures `herdr agent list` JSON, stamps tick
