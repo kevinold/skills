@@ -13,14 +13,26 @@ npx skills add kevinold/skills -g                       # user-level instead of 
 npx skills update                                       # pull the latest versions
 ```
 
-To also get [claude-video](https://github.com/bradautomates/claude-video), which `meeting-notes` needs to read meeting recordings, use the bootstrap script. It runs the same `npx skills add` with your arguments, then asks whether to install claude-video for the same agents and scope:
+`meeting-notes` needs [claude-video](https://github.com/bradautomates/claude-video) to read meeting recordings. Transcripts, summaries and screenshot timelines work without it. There are two ways to get it.
+
+Install it yourself, with the same agent and scope flags you used above:
+
+```bash
+npx skills add bradautomates/claude-video              # add -a/-g to match your skills install
+```
+
+Or use the bootstrap script. It runs `npx skills add kevinold/skills` with your arguments, then asks whether to install claude-video for the same agents and scope:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/kevinold/skills/main/install.sh | bash
 curl -fsSL https://raw.githubusercontent.com/kevinold/skills/main/install.sh | bash -s -- -g --with-video   # no prompt
 ```
 
-`--with-video` and `--no-video` skip the question. It isn't asked when `-s` leaves out `meeting-notes`, or when there's no terminal to ask on.
+`--with-video` and `--no-video` answer the question up front. The script doesn't ask when `-s` leaves out `meeting-notes`, or when there's no terminal to ask on. Claude Code users who already installed `watch` from the plugin marketplace should answer no.
+
+### Upgrading
+
+`npx skills update` updates only the skills already installed. Run it to get new versions of those, including claude-video if you installed it with the skills CLI. It doesn't add skills that are new to this repo; install those by name, e.g. `npx skills add kevinold/skills -s meeting-notes -s prfaq`. If you already have a hand-made skill with the same name, such as `~/.claude/skills/meeting-notes`, installing over it can overwrite it, so back up local edits first.
 
 A project-level install lands in the repo, for example `.claude/skills/<name>/` or `.agents/skills/<name>/`. Commit it so teammates' agents get the same version.
 
