@@ -1,0 +1,163 @@
+<!doctype html>
+<!--
+  PRFAQ HTML-twin shell. Fill every SLOT, delete the SLOT comments, and keep parity
+  with the canonical Markdown (same claims, status, quotes, open questions).
+  Self-contained: NO external CSS/JS/fonts/CDNs. Must render offline.
+  Keep the CSS and the <script> at the bottom as-is — they are generic.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title><!-- SLOT: Feature Name --> — PRFAQ</title>
+<style>
+  :root{
+    --ink:#1a2230; --muted:#5b6675; --line:#e3e8ef; --bg:#f7f9fc; --card:#fff;
+    --built:#1f9d57; --built-bg:#e7f6ee; --partial:#b8860b; --partial-bg:#fbf3df;
+    --planned:#2f6fed; --planned-bg:#e8f0fe; --accent:#2f6fed;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:920px;margin:0 auto;padding:0 20px 80px}
+  nav.top{position:sticky;top:0;z-index:10;background:rgba(247,249,252,.92);
+    backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:10px 0;margin-bottom:8px}
+  nav.top .inner{max-width:920px;margin:0 auto;padding:0 20px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  nav.top a{font-size:13px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:#fff}
+  nav.top a:hover{color:var(--accent);border-color:var(--accent)}
+  .controls{margin-left:auto;display:flex;gap:8px}
+  button.toggle{font-size:13px;cursor:pointer;border:1px solid var(--line);background:#fff;border-radius:999px;padding:4px 12px;color:var(--ink)}
+  button.toggle:hover{border-color:var(--accent);color:var(--accent)}
+  header.hero{background:linear-gradient(180deg,#fff, #f2f6fd);border:1px solid var(--line);
+    border-radius:16px;padding:30px 28px;margin:14px 0 26px}
+  header.hero .kicker{text-transform:uppercase;letter-spacing:.08em;font-size:12px;color:var(--accent);font-weight:700}
+  header.hero h1{font-size:30px;line-height:1.2;margin:6px 0 12px}
+  .lede{font-size:18px;color:#26303f;background:#fff;border-left:4px solid var(--accent);
+    padding:12px 16px;border-radius:0 10px 10px 0;margin:0}
+  .note{font-size:14px;color:var(--muted);margin:14px 0 0}
+  .legend{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 0}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;
+    padding:3px 10px;border-radius:999px;border:1px solid transparent}
+  .chip.built{color:var(--built);background:var(--built-bg);border-color:#bfe6cf}
+  .chip.partial{color:var(--partial);background:var(--partial-bg);border-color:#ecd9a3}
+  .chip.planned{color:var(--planned);background:var(--planned-bg);border-color:#c2d6fb}
+  .chip .dot{width:8px;height:8px;border-radius:50%;background:currentColor}
+  section{margin:30px 0}
+  h2{font-size:22px;margin:0 0 6px;padding-top:6px}
+  h2 .tag{font-size:12px;color:var(--muted);font-weight:600}
+  figure{margin:18px 0;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;text-align:center}
+  figure svg{max-width:100%;height:auto}
+  figcaption{font-size:13px;color:var(--muted);margin-top:8px}
+  details{background:var(--card);border:1px solid var(--line);border-radius:12px;margin:10px 0;padding:0 16px}
+  summary{cursor:pointer;font-weight:650;padding:14px 0;list-style:none;display:flex;align-items:center;gap:10px}
+  summary::-webkit-details-marker{display:none}
+  summary::before{content:"+";color:var(--accent);font-weight:800;font-size:18px;width:16px}
+  details[open] summary::before{content:"–"}
+  details .body{padding:0 0 14px;color:#27313f}
+  p{margin:.5em 0}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14.5px;background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#f1f5fb;font-size:13px}
+  tr:last-child td{border-bottom:none}
+  blockquote{margin:14px 0;padding:12px 16px;background:#fff;border:1px solid var(--line);
+    border-left:4px solid #c2d6fb;border-radius:0 10px 10px 0;color:#2b3543;font-style:italic}
+  blockquote cite{display:block;font-style:normal;font-size:13px;color:var(--muted);margin-top:6px}
+  .callout{background:#fff7ed;border:1px solid #f3d9b5;border-radius:12px;padding:16px 18px;margin:14px 0}
+  .callout h3{margin:0 0 8px;font-size:16px;color:#9a5b00}
+  .callout ul{margin:6px 0 0;padding-left:18px}
+  code{background:#eef2f8;padding:1px 5px;border-radius:5px;font-size:13px}
+  ol.steps{counter-reset:s;list-style:none;padding-left:0}
+  ol.steps li{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 14px 10px 44px;position:relative;margin:8px 0}
+  ol.steps li::before{counter-increment:s;content:counter(s);position:absolute;left:12px;top:10px;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  footer{margin-top:40px;border-top:1px solid var(--line);padding-top:16px;font-size:13.5px;color:var(--muted)}
+  footer a{color:var(--accent)}
+  .filtering tr:not(.planned-row):not(.head){display:none}
+  @media print{nav.top,.controls{display:none}details>summary::before{content:""}details .body{display:block!important}}
+</style>
+</head>
+<body>
+<nav class="top"><div class="inner">
+  <!-- SLOT: one <a href="#id"> pill per section below. Keep #open last. -->
+  <a href="#pr">Press Release</a>
+  <a href="#a">Why</a>
+  <a href="#status">Built vs Planned</a>
+  <a href="#open">Open Questions</a>
+  <span class="controls">
+    <button class="toggle" id="plannedBtn" type="button">Show only Planned</button>
+    <button class="toggle" id="expandBtn" type="button">Expand all</button>
+  </span>
+</div></nav>
+
+<div class="wrap">
+  <header class="hero" id="pr">
+    <div class="kicker">PRFAQ · <!-- SLOT: source meeting --> · <!-- SLOT: date --></div>
+    <h1><!-- SLOT: Feature Name --></h1>
+    <p class="lede"><!-- SLOT: one-sentence thesis (matches the MD bold definition) --></p>
+    <!-- SLOT (optional): "Reads with" note — <p class="note">Reads with <a href="...">Sibling</a>...</p> -->
+    <div class="legend">
+      <span class="chip built"><span class="dot"></span>BUILT</span>
+      <span class="chip partial"><span class="dot"></span>PARTIAL</span>
+      <span class="chip planned"><span class="dot"></span>PLANNED</span>
+    </div>
+  </header>
+
+  <!-- SLOT: ONE signature inline-SVG figure capturing the core before/after or flow.
+       Hand-draw it for THIS feature. No <img>, no external assets. Example scaffold: -->
+  <figure aria-label="<!-- SLOT: describe the figure -->">
+    <svg viewBox="0 0 720 230" role="img" width="720" height="230">
+      <g font-family="inherit" font-size="13">
+        <!-- SLOT: draw the feature's core spatial idea (before vs after, or the flow) -->
+      </g>
+    </svg>
+    <figcaption><!-- SLOT: one line on what the figure shows --></figcaption>
+  </figure>
+
+  <section id="prbody">
+    <!-- SLOT: 1–3 short press-release paragraphs + 1–2 attributed pull-quotes -->
+    <blockquote>"<!-- SLOT: verbatim quote -->"<cite>— <!-- SLOT: Speaker, meeting, ~M:SS --></cite></blockquote>
+  </section>
+
+  <!-- SLOT: one <section> per FAQ group (A, B, C…). FAQ items use <details>. Pattern: -->
+  <section id="a">
+    <h2>A. <!-- SLOT: group title --></h2>
+    <details open><summary><!-- SLOT: question --></summary>
+      <div class="body"><p><!-- SLOT: answer. Status chip inline where it describes a capability:
+        <span class="chip planned"><span class="dot"></span>PLANNED</span> --></p></div></details>
+    <details><summary><!-- SLOT: question --></summary>
+      <div class="body"><p><!-- SLOT: answer --></p></div></details>
+  </section>
+
+  <!-- SLOT: the BUILT vs PLANNED status table. Give PLANNED rows class="planned-row" so the
+       "Show only Planned" filter works. Keep the head row class="head". -->
+  <section id="status">
+    <h2><!-- SLOT letter -->. What's BUILT today vs PLANNED</h2>
+    <table id="statusTable">
+      <tr class="head"><th>Capability</th><th>Status</th><th>Where</th></tr>
+      <tr><td><!-- SLOT --></td><td><span class="chip built"><span class="dot"></span>BUILT</span></td><td><code><!-- real path --></code></td></tr>
+      <tr class="planned-row"><td><!-- SLOT --></td><td><span class="chip planned"><span class="dot"></span>PLANNED</span></td><td><code><!-- design doc, plan, or meeting summary path --></code></td></tr>
+    </table>
+  </section>
+
+  <section id="open">
+    <div class="callout">
+      <h3>Open questions still being decided</h3>
+      <ul>
+        <li><strong><!-- SLOT: open question --></strong> — <!-- SLOT: the tension, not a decision --></li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <p><strong>Sources.</strong> Meeting notes: <code><!-- SLOT: path relative to docs/prfaqs/, e.g. ../meeting-notes/<series>/<date>/<date>-summary.md --></code>. Related: <!-- SLOT: sibling PRFAQ links -->. Code: <code><!-- SLOT: paths --></code>.</p>
+    <p>Markdown is canonical: <a href="<feature>-prfaq.md"><!-- SLOT: feature -->-prfaq.md</a>.</p>
+  </footer>
+</div>
+
+<script>
+  var planned=document.getElementById('plannedBtn'),tbl=document.getElementById('statusTable'),exp=document.getElementById('expandBtn');
+  planned.addEventListener('click',function(){var on=tbl.classList.toggle('filtering');planned.textContent=on?'Show all rows':'Show only Planned';});
+  exp.addEventListener('click',function(){var ds=document.querySelectorAll('details'),anyClosed=[].some.call(ds,function(d){return !d.open;});[].forEach.call(ds,function(d){d.open=anyClosed;});exp.textContent=anyClosed?'Collapse all':'Expand all';});
+</script>
+</body>
+</html>

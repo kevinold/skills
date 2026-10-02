@@ -1123,7 +1123,7 @@ describe("run.mjs spine gate against a repo config (R5, R10, R13)", () => {
   // install lives outside the primary and is never dirty-checked.
   it("a project-level skill install with an uncommitted edit refuses config-dirty; a global install is not checked", () => {
     const root = makePrimary();
-    const installed = join(root, ".agents", "skills", "multi-worker-pm", "scripts");
+    const installed = join(root, ".agents", "skills", "ko-multi-worker-pm", "scripts");
     cpSync(HERE, installed, { recursive: true });
     const g = (...args) => execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@example.invalid", ...args], { cwd: root, env: gitFreeEnv() });
     g("add", "-A");
@@ -1147,14 +1147,14 @@ describe("run.mjs spine gate against a repo config (R5, R10, R13)", () => {
   // the real install inside the primary.
   it("a symlinked project-level install with an uncommitted edit refuses config-dirty", () => {
     const root = makePrimary();
-    const real = join(root, ".agents", "skills", "multi-worker-pm");
+    const real = join(root, ".agents", "skills", "ko-multi-worker-pm");
     cpSync(HERE, join(real, "scripts"), { recursive: true });
     mkdirSync(join(root, ".claude", "skills"), { recursive: true });
-    symlinkSync(join("..", "..", ".agents", "skills", "multi-worker-pm"), join(root, ".claude", "skills", "multi-worker-pm"));
+    symlinkSync(join("..", "..", ".agents", "skills", "ko-multi-worker-pm"), join(root, ".claude", "skills", "ko-multi-worker-pm"));
     const g = (...args) => execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@example.invalid", ...args], { cwd: root, env: gitFreeEnv() });
     g("add", "-A");
     g("commit", "-q", "--no-verify", "-m", "vendor skill");
-    const viaLink = join(root, ".claude", "skills", "multi-worker-pm", "scripts", "run.mjs");
+    const viaLink = join(root, ".claude", "skills", "ko-multi-worker-pm", "scripts", "run.mjs");
     const gate = () =>
       spawnSync(process.execPath, [viaLink, "spine", "gate", "--primary", root, "--primary-head", "abc", "--origin-base", "abc",
         "--predecessor", JSON.stringify({ verified: true }), "--login", "acme-bot", "--last-config", "none"], { encoding: "utf8", cwd: root });
@@ -1170,7 +1170,7 @@ describe("run.mjs spine gate against a repo config (R5, R10, R13)", () => {
   // trips config-drift like an edited config does.
   it("the config digest changes when the installed skill's code changes", () => {
     const primary = makePrimary();
-    const dir = join(mkdtempSync(join(SCRATCH, "global-")), "multi-worker-pm");
+    const dir = join(mkdtempSync(join(SCRATCH, "global-")), "ko-multi-worker-pm");
     cpSync(HERE, join(dir, "scripts"), { recursive: true });
     const digest = () =>
       spawnSync(process.execPath, [join(dir, "scripts", "run.mjs"), "spine", "config", "--digest", "--primary", primary], { encoding: "utf8" }).stdout.trim();
