@@ -40,7 +40,7 @@ The plan, the `.feature`, the issue, any request document and every app response
    - `manifested`: a `bad` scenario whose rejection mode appeared.
    - `route` names the route the outcome was observed on, one that scenario declares.
 
-   **Pages:** save a screenshot to `.tmp/acceptance/evidence/<sha7>/` and record its path in the relevant dimension's `evidence[]`.
+   **Pages:** save a screenshot to `.tmp/acceptance/evidence/<sha7>/`, passing the browser tool an absolute path because some resolve a relative one elsewhere. Confirm the file exists, then record its repo-relative path in the relevant dimension's `evidence[]`.
 
    **API routes:** read the method and status from the steps. With no method named, set that route's row to `Skip`, reason `no method named`. Call it through `capture.mjs` rather than by hand, because that is what keeps secrets out of the evidence:
 
