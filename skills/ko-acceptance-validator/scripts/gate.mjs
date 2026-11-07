@@ -36,7 +36,6 @@ export function gate(verdictText, featureText, sha, expectedFingerprint) {
   if (verdict.verdict !== "PASS") return `would-block: ${verdict.verdict.toLowerCase()}`;
   if (!verdict.target_url) return "would-block: missing-target-url";
 
-  // Never pass a drifted artifact or a verdict from another commit.
   if (hashArtifact(featureText ?? "") !== verdict.artifact_hash) return "would-block: artifact-drift";
   if (verdict.sha !== sha) return "would-block: sha-mismatch";
   if (expectedFingerprint !== undefined && verdict.judge_fingerprint !== expectedFingerprint) return "would-block: stale-fingerprint";
@@ -50,7 +49,7 @@ export function gate(verdictText, featureText, sha, expectedFingerprint) {
 
 function main([verdictPath, featurePath, sha, expectedFingerprint]) {
   const verdictText = readFileSync(verdictPath, "utf8");
-  let featureText = "";
+  let featureText;
   try {
     featureText = readFileSync(featurePath, "utf8");
   } catch {

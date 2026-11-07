@@ -9,10 +9,11 @@
 //   `selection.files`.
 
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { ACCEPTANCE_DIR, ALL_DIMENSIONS, isRemoteTarget, validate } from "./verdict.mjs";
+import { DIMENSIONS } from "./gherkin.mjs";
+import { ACCEPTANCE_DIR, ensureAcceptanceDir, isRemoteTarget, validate } from "./verdict.mjs";
 
 const GH_ATTACH_CAP = 50;
 const EXCERPT_LINES = 40;
@@ -27,7 +28,6 @@ const STATUS_EMOJI = { PASS: "✅", CONCERNS: "🟡", REJECT: "❌", unevaluated
 
 const stem = (p) => basename(p).replace(/\.[^.]+$/, "");
 
-/** Where the publication marker for a HEAD sha lives. */
 export function postedMarkerPath(sha7) {
   return `${ACCEPTANCE_DIR}/posted-${sha7}.json`;
 }
@@ -39,7 +39,7 @@ export function postedMarkerPath(sha7) {
  */
 export function selectEvidence(verdict, exists) {
   const seen = new Set();
-  for (const name of ALL_DIMENSIONS) {
+  for (const name of DIMENSIONS) {
     for (const p of verdict.dimensions?.[name]?.evidence ?? []) {
       if (typeof p === "string" && p.length) seen.add(p);
     }
@@ -91,7 +91,7 @@ export function composeComment(verdict, selection, { trailer, notes, readText } 
   const attached = new Set(selection.files);
   const excerpted = new Set(selection.text ?? []);
   const emitted = new Set(); // each file renders once, so an image maps 1:1 to its --attach
-  for (const name of ALL_DIMENSIONS) {
+  for (const name of DIMENSIONS) {
     const d = verdict.dimensions?.[name];
     if (!d) continue;
     lines.push(`#### ${STATUS_EMOJI[d.status] ?? "⚪"} ${DIM_LABEL[name]} — ${d.status}`);
@@ -124,7 +124,6 @@ export function resolveTarget({ prNumber, branch }) {
   return null;
 }
 
-/** `gh {pr|issue} comment <n> --body-file <path> [--attach <file>#<stem>]...` argv. */
 export function ghArgs(target, bodyPath, files) {
   const args = [target.kind, "comment", String(target.number), "--body-file", bodyPath];
   for (const f of files) args.push("--attach", `${f}#${stem(f)}`);
@@ -236,13 +235,13 @@ function main(argv) {
       }
     },
     writeBody: (text) => {
-      mkdirSync(ACCEPTANCE_DIR, { recursive: true });
+      ensureAcceptanceDir();
       const p = join(ACCEPTANCE_DIR, "comment-build.md");
       writeFileSync(p, text);
       return p;
     },
     writeMarker: (sha7, target, verdictPath, files) => {
-      mkdirSync(ACCEPTANCE_DIR, { recursive: true });
+      ensureAcceptanceDir();
       writeFileSync(postedMarkerPath(sha7), JSON.stringify({ target, verdict: basename(verdictPath), evidence: files }, null, 2) + "\n");
     },
     gh,

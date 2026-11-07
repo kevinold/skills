@@ -19,8 +19,7 @@ export const VERDICTS = ["PASS", "CONCERNS", "REJECT", "unevaluated"];
 const DIMENSION_STATUS = ["PASS", "CONCERNS", "REJECT", "unevaluated", "not_applicable"];
 const ROUTE_RESULTS = ["Pass", "Fail", "Skip"];
 const SCENARIO_STATUS = ["held", "manifested", "unevaluated"];
-export const ALL_DIMENSIONS = DIMENSIONS;
-const REQUIRED_DIMS = { build: ALL_DIMENSIONS, spec: ["workflow-fit", "intent-match"] };
+const REQUIRED_DIMS = { build: DIMENSIONS, spec: ["workflow-fit", "intent-match"] };
 // A reason on an unevaluated verdict that names one of these implies no artifact exists yet,
 // so artifact_hash must be null.
 const ARTIFACT_UNAVAILABLE_CODES = ["insufficient-intent", "missing-artifact", "no-artifact", "artifact-unavailable"];
@@ -78,10 +77,8 @@ export function validate(verdict) {
   if (verdict.verdict === "unevaluated" && (typeof verdict.reason !== "string" || verdict.reason.length === 0))
     errors.push("reason: required when verdict is unevaluated");
 
-  // artifact_hash null is legal only on an unevaluated verdict.
   if (verdict.artifact_hash === null && verdict.verdict !== "unevaluated") errors.push("artifact_hash: null is only valid on an unevaluated verdict");
 
-  // An artifact-unavailable unevaluated must carry a null artifact_hash (no artifact exists yet).
   if (verdict.verdict === "unevaluated" && reasonIsArtifactUnavailable(verdict.reason) && verdict.artifact_hash !== null)
     errors.push("artifact_hash: must be null on an artifact-unavailable unevaluated verdict");
 
@@ -134,7 +131,6 @@ function deriveTopLevel({ stage, dimensions, routes, scenarios, artifact_hash, s
     }
     if (isBuild) {
       if (!scenarios.some((s) => s.dimension === name && exercised.has(s.route))) reasons.push(`dimension ${name} has no matching @dimension scenario`);
-      // A blank string is not evidence.
       const hasEvidence = Array.isArray(d.evidence) && d.evidence.length > 0 && d.evidence.every((e) => typeof e === "string" && e.trim().length > 0);
       if (!hasEvidence) reasons.push(`dimension ${name} has no evidence`);
     }
@@ -294,7 +290,7 @@ function main([cmd, ...rest]) {
     }
     case "fingerprint": {
       const [judgeFile, modelId] = rest;
-      const judgeText = existsSync(judgeFile) ? readFileSync(judgeFile, "utf8") : ""; // missing-judge must still persist
+      const judgeText = existsSync(judgeFile) ? readFileSync(judgeFile, "utf8") : "";
       process.stdout.write(judgeFingerprint(judgeText, modelId) + "\n");
       return 0;
     }

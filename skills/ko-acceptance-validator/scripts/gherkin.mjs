@@ -26,8 +26,8 @@ export const slug = (name) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
-// Split on unescaped pipes, dropping what sits outside the outer pair. `\|` is a
-// literal pipe and `\\` a literal backslash, as in the official parser.
+// Count a table row's cells. `\|` is a literal pipe and `\\` a literal backslash, as
+// in the official parser.
 function tableCellCount(line) {
   let cells = 0;
   for (let i = 1; i < line.length; i++) {
@@ -71,6 +71,19 @@ export function parse(text) {
   let lastStepType = null;
   let languageAllowed = true;
 
+  const takeTags = () => {
+    const t = pendingTags;
+    pendingTags = [];
+    pendingTagLine = 0;
+    return t;
+  };
+  const closeBlock = () => {
+    afterStep = false;
+    inSteps = false;
+    tableWidth = null;
+    lastStepType = null;
+  };
+
   for (let i = 0; i < lines.length; i++) {
     const n = i + 1;
     const line = lines[i].trim();
@@ -94,19 +107,6 @@ export function parse(text) {
       afterStep = false;
       continue;
     }
-
-    const takeTags = () => {
-      const t = pendingTags;
-      pendingTags = [];
-      pendingTagLine = 0;
-      return t;
-    };
-    const closeBlock = () => {
-      afterStep = false;
-      inSteps = false;
-      tableWidth = null;
-      lastStepType = null;
-    };
 
     if (line.startsWith("Feature:")) {
       if (feature) {

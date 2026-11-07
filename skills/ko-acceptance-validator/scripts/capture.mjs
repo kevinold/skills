@@ -145,11 +145,11 @@ async function main() {
     remote: isRemoteTarget(target),
   });
 
-  const baseDir = ensureAcceptanceDir(resolve(process.cwd(), ACCEPTANCE_DIR));
-  const file = join(baseDir, "evidence", sha.slice(0, 7), `${scenarioId}.txt`);
+  ensureAcceptanceDir();
+  const file = join(ACCEPTANCE_DIR, "evidence", sha.slice(0, 7), `${scenarioId}.txt`);
   mkdirSync(dirname(file), { recursive: true });
   writeFileSync(file, saved);
-  process.stderr.write(`evidence: ${join(ACCEPTANCE_DIR, "evidence", sha.slice(0, 7), `${scenarioId}.txt`)}\n`);
+  process.stderr.write(`evidence: ${file}\n`);
   process.stdout.write(scrubValues(`status ${response.status}\n${responseBody}\n`, secrets));
   return 0;
 }
