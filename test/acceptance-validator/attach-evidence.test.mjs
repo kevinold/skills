@@ -8,7 +8,7 @@ import {
   run,
 } from "../../skills/ko-acceptance-validator/scripts/attach-evidence.mjs";
 import { isRemoteTarget } from "../../skills/ko-acceptance-validator/scripts/verdict.mjs";
-import { mkdtempSync, writeFileSync, mkdirSync, rmSync, existsSync, readdirSync } from "node:fs";
+import { mkdtempSync, writeFileSync, mkdirSync, rmSync, existsSync, readdirSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
@@ -303,6 +303,8 @@ describe("review posture (remote target, --pr, --notes-file)", () => {
     }
     expect(isRemoteTarget("https://x.preview.example")).toBe(true);
     expect(isRemoteTarget("https://localhost.evil.example")).toBe(true);
+    expect(isRemoteTarget("https://localhost:x@prod.example.com/")).toBe(true);
+    expect(isRemoteTarget("not a url")).toBe(true);
   });
 
   it("first line names the deployed preview for a remote target_url", () => {
@@ -453,6 +455,24 @@ describe("CLI --dry-run --pr --notes-file (scratch repo, never posts)", () => {
     expect(r.stderr).toMatch(/notes-file/);
   });
 
+  it("never reads evidence from outside the evidence directory", () => {
+    writeFileSync(join(dir, "secret.env"), "API_KEY=do-not-post\n");
+    const evidenceDir = join(dir, ".tmp/acceptance/evidence/abc");
+    mkdirSync(evidenceDir, { recursive: true });
+    writeFileSync(join(evidenceDir, "ok.txt"), "status 200\n");
+    symlinkSync(join(dir, "secret.env"), join(evidenceDir, "link.txt"));
+    seed({
+      dimensions: {
+        ...buildVerdict({}).dimensions,
+        "workflow-fit": { status: "PASS", findings: [], evidence: ["secret.env", "../secret.env", ".tmp/acceptance/evidence/abc/link.txt", ".tmp/acceptance/evidence/abc/ok.txt"] },
+      },
+    });
+    const r = cli("--dry-run", "--pr", "2570");
+    expect(r.stdout).toContain("status 200");
+    expect(r.stdout).not.toContain("do-not-post");
+    expect(r.stdout).toMatch(/3 evidence files missing or outside/);
+  });
+
   it("an invalid --pr refuses (no body, exit 0)", () => {
     seed({});
     const r = cli("--dry-run", "--pr", "abc");
@@ -515,6 +535,34 @@ describe("text evidence", () => {
     expect(r.posted).toBe(true);
     expect(gh.mock.calls[0][0]).not.toContain("--attach");
     expect(r.body).toContain("status 200");
+  });
+
+  it("reposts when the verdict changed under the same file name", () => {
+    const posted = [];
+    const deps = (verdict) => ({
+      gh: vi.fn(),
+      writeMarker: (sha7, target, path, files, digest) => posted.push(digest),
+      writeBody: () => "/tmp/b.md",
+      headSha7: () => SHA7,
+      findVerdict: () => ({ path: "build-x.json", verdict }),
+      exists: existsAll,
+      readText,
+      alreadyPosted: (path, target, files, digest) => posted.includes(digest),
+      prNumber: () => 7,
+      branch: () => "x",
+    });
+    const pass = buildVerdict({ "workflow-fit": ["a.png"] });
+    expect(run(deps(pass), {}).posted).toBe(true);
+    expect(run(deps(pass), {}).posted).toBe(false);
+    const reject = buildVerdict({ "workflow-fit": ["a.png"] }, { verdict: "REJECT", statuses: { legibility: "REJECT" } });
+    expect(run(deps(reject), {}).posted).toBe(true);
+  });
+
+  it("refuses evidence from a verdict that names no target, unless marked redacted", () => {
+    const unknown = { ...buildVerdict({ "workflow-fit": ["a.png"] }), target_url: null };
+    const deps = { gh: vi.fn(), writeMarker: vi.fn(), writeBody: () => "/tmp/b.md", headSha7: () => SHA7, findVerdict: () => ({ path: "build-x.json", verdict: unknown }), exists: existsAll, readText, alreadyPosted: () => false, prNumber: () => 7, branch: () => "x" };
+    expect(run(deps, {}).note).toMatch(/redact/i);
+    expect(deps.gh).not.toHaveBeenCalled();
   });
 
   it("refuses a remote verdict whose only evidence is text unless marked redacted", () => {

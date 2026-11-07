@@ -1,10 +1,10 @@
 import { describe, it, expect, afterAll } from "vitest";
-import { mkdtempSync, rmSync, existsSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, existsSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
-import { hashArtifact, judgeFingerprint, validate, compose, persist, topLevelFromRecorded, fingerprintKey } from "../../skills/ko-acceptance-validator/scripts/verdict.mjs";
+import { ensureAcceptanceDir, hashArtifact, judgeFingerprint, validate, compose, persist, topLevelFromRecorded, fingerprintKey } from "../../skills/ko-acceptance-validator/scripts/verdict.mjs";
 
 const NOW = "2026-09-16T12:00:00.000Z";
 const SHA = "abc1234def5678";
@@ -548,6 +548,62 @@ describe("the verdict's scenarios must match the artifact's", () => {
   });
 });
 
+describe("a scenario outcome the job failed on", () => {
+  const withStatus = (id, status) => {
+    const draft = buildDraft();
+    draft.scenarios = draft.scenarios.map((s) => (s.id === id ? { ...s, status } : s));
+    return draft;
+  };
+
+  it("a manifested bad scenario composes REJECT even when every dimension says PASS", () => {
+    const v = compose(withStatus("b1", "manifested"), buildOpts);
+    expect(v.verdict).toBe("REJECT");
+    expect(topLevelFromRecorded(v)).toBe("REJECT");
+  });
+
+  it("a good scenario that failed composes REJECT", () => {
+    const v = compose(withStatus("g1", "failed"), buildOpts);
+    expect(v.verdict).toBe("REJECT");
+    expect(validate(v).ok).toBe(true);
+  });
+});
+
+describe("a draft that cannot be trusted", () => {
+  const specDims = { "workflow-fit": { status: "PASS" }, "intent-match": { status: "PASS" }, legibility: { status: "not_applicable" }, "convention-fit": { status: "not_applicable" } };
+
+  it.each(["bild", undefined])("stage %s never composes PASS", (stage) => {
+    const v = compose({ ...specDraft(specDims), stage }, specOpts);
+    expect(v.verdict).toBe("unevaluated");
+    expect(v.reason).toMatch(/stage/);
+  });
+
+  it("an unknown dimension status never composes PASS", () => {
+    const v = compose(specDraft({ ...specDims, "workflow-fit": { status: "REJECTED" } }), specOpts);
+    expect(v.verdict).toBe("unevaluated");
+    expect(v.reason).toMatch(/workflow-fit/);
+  });
+
+  it("a build draft with no target_url never composes PASS", () => {
+    const v = compose(buildDraft({ target_url: undefined }), buildOpts);
+    expect(v.verdict).toBe("unevaluated");
+    expect(v.reason).toMatch(/no-target/);
+  });
+
+  it("a row relabeled to another dimension does not earn that dimension", () => {
+    const draft = buildDraft();
+    draft.scenarios[0].dimension = "legibility";
+    const v = compose(draft, buildOpts);
+    expect(v.verdict).toBe("unevaluated");
+    expect(v.reason).toMatch(/scenario g1 recorded under dimension legibility/);
+  });
+
+  it("validate rejects routes or scenarios that are not lists of objects", () => {
+    const v = compose(buildDraft(), buildOpts);
+    expect(validate({ ...v, routes: {} }).ok).toBe(false);
+    expect(validate({ ...v, scenarios: [null] }).ok).toBe(false);
+  });
+});
+
 describe("a reason on the draft", () => {
   it("composes unevaluated with that reason first, even with a valid artifact", () => {
     const v = compose(buildDraft({ reason: "browser-unavailable" }), buildOpts);
@@ -597,6 +653,34 @@ describe("fingerprint CLI", () => {
     const r = cli("fingerprint", join(scratch, "missing.md"), "model-x");
     expect(r.status).toBe(0);
     expect(r.stdout.trim()).toBe(judgeFingerprint("", "model-x"));
+  });
+});
+
+describe("the working directory", () => {
+  const git = (cwd, ...a) => spawnSync("git", a, { cwd, encoding: "utf8", env: Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith("GIT_"))) });
+  const script = join(import.meta.dirname, "../../skills/ko-acceptance-validator/scripts/verdict.mjs");
+
+  it("refuses a directory a commit tracks, so a PR cannot plant a write through it", () => {
+    const repo = mkdtempSync(join(tmpdir(), "acceptance-tracked-"));
+    git(repo, "init", "-q");
+    mkdirSync(join(repo, ".tmp/acceptance"), { recursive: true });
+    writeFileSync(join(repo, ".tmp/acceptance/comment-build.md"), "x");
+    git(repo, "add", "-f", ".tmp/acceptance/comment-build.md");
+    writeFileSync(join(repo, "d.json"), JSON.stringify({ stage: "spec", dimensions: {}, reason: "missing-judge" }));
+    const r = spawnSync(process.execPath, [script, "compose", "d.json", "-", "abc1234", "m@x"], { cwd: repo, encoding: "utf8" });
+    expect(r.status).not.toBe(0);
+    expect(r.stderr).toMatch(/refusing/);
+    rmSync(repo, { recursive: true, force: true });
+  });
+
+  it("refuses a symlinked directory", () => {
+    const repo = mkdtempSync(join(tmpdir(), "acceptance-link-"));
+    const elsewhere = mkdtempSync(join(tmpdir(), "acceptance-elsewhere-"));
+    mkdirSync(join(repo, ".tmp"));
+    symlinkSync(elsewhere, join(repo, ".tmp/acceptance"));
+    expect(() => ensureAcceptanceDir(join(repo, ".tmp/acceptance"))).toThrow(/refusing/);
+    rmSync(repo, { recursive: true, force: true });
+    rmSync(elsewhere, { recursive: true, force: true });
   });
 });
 

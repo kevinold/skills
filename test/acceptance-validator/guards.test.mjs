@@ -79,7 +79,7 @@ describe("no absolute local path", () => {
 });
 
 const IMPORTS = /(?:from|import)\s*\(?\s*["']([^"']+)["']/g;
-const foreignImports = (src) => [...src.matchAll(IMPORTS)].map((m) => m[1]).filter((spec) => !spec.startsWith("./") && !spec.startsWith("node:"));
+const foreignImports = (src) => [...src.matchAll(IMPORTS)].map((m) => m[1]).filter((spec) => !/^\.\/[^/]+$/.test(spec) && !spec.startsWith("node:"));
 
 describe("every shipped script runs with no install", () => {
   const scripts = SKILL_FILES.filter((f) => f.endsWith(".mjs"));
@@ -93,7 +93,7 @@ describe("every shipped script runs with no install", () => {
   });
 
   it("catches a bare dependency and a path out of the folder", () => {
-    expect(foreignImports('import x from "yaml";\nimport y from "../z.mjs";\nimport "./ok.mjs";\nimport { a } from "node:fs";')).toEqual(["yaml", "../z.mjs"]);
+    expect(foreignImports('import x from "yaml";\nimport y from "../z.mjs";\nimport "./ok.mjs";\nimport w from "./../../w.mjs";\nimport { a } from "node:fs";')).toEqual(["yaml", "../z.mjs", "./../../w.mjs"]);
   });
 
   it("ships no test file a consumer's runner could pick up", () => {

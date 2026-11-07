@@ -41,14 +41,21 @@ export function gate(verdictText, featureText, sha, expectedFingerprint) {
   if (expectedFingerprint !== undefined && verdict.judge_fingerprint !== expectedFingerprint) return "would-block: stale-fingerprint";
 
   // validate() checks shape only, so a forged PASS with empty components and a matching public
-  // sha and hash passes it. Require the recorded components to actually earn the claimed PASS.
-  if (topLevelFromRecorded(verdict) !== "PASS") return "would-block: not-earned";
+  // sha and hash passes it. Require the recorded components to earn the claimed PASS against the
+  // file itself, so a dropped scenario or an unwalked route cannot slip through.
+  if (topLevelFromRecorded(verdict, featureText ?? "") !== "PASS") return "would-block: not-earned";
 
   return "would-pass";
 }
 
 function main([verdictPath, featurePath, sha, expectedFingerprint]) {
-  const verdictText = readFileSync(verdictPath, "utf8");
+  let verdictText;
+  try {
+    verdictText = readFileSync(verdictPath, "utf8");
+  } catch {
+    process.stdout.write("would-block: no-verdict\n");
+    return;
+  }
   let featureText;
   try {
     featureText = readFileSync(featurePath, "utf8");

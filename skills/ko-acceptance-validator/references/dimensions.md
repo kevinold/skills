@@ -53,6 +53,13 @@ The change matches the surface's established patterns and avoids clutter. A new 
 
 **Typical rejection:** an input that ships always-open on a surface where every other one collapses behind the same button. Correctness was never the issue.
 
+## Choosing a status
+
+- **REJECT:** this person could not do the job, or the change matches an anchor case's failure. A `bad` scenario that manifested or a `good` one that failed is always this.
+- **CONCERNS:** the job gets done, but something would slow, confuse or surprise this person.
+- **PASS:** the questions above all come back clean.
+- **unevaluated:** you could not find out. Never guess a PASS.
+
 ## Which stage judges what
 
 | Dimension | Spec stage (plan text) | Build stage (running app) |

@@ -6,8 +6,9 @@
 // ponytail: hand-written validator, swap for a JSON-schema lib if the schema grows past one page.
 
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { execFileSync } from "node:child_process";
+import { existsSync, lstatSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { DIMENSIONS, lint, listScenarios } from "./gherkin.mjs";
 
@@ -18,7 +19,10 @@ const STAGES = ["spec", "build"];
 export const VERDICTS = ["PASS", "CONCERNS", "REJECT", "unevaluated"];
 const DIMENSION_STATUS = ["PASS", "CONCERNS", "REJECT", "unevaluated", "not_applicable"];
 const ROUTE_RESULTS = ["Pass", "Fail", "Skip"];
-const SCENARIO_STATUS = ["held", "manifested", "unevaluated"];
+// `manifested`: a bad scenario's rejection mode appeared. `failed`: a good scenario did not hold.
+const SCENARIO_STATUS = ["held", "manifested", "failed", "unevaluated"];
+const REJECTING_STATUS = ["manifested", "failed"];
+const LOOPBACK_HOSTS = ["localhost", "127.0.0.1", "[::1]", "0.0.0.0"];
 const REQUIRED_DIMS = { build: DIMENSIONS, spec: ["workflow-fit", "intent-match"] };
 // A reason on an unevaluated verdict that names one of these implies no artifact exists yet,
 // so artifact_hash must be null.
@@ -39,7 +43,11 @@ export function judgeFingerprint(judgeText, modelId) {
 /** A target not on the loopback host is a deployed target, which can show real data. Absent = local. */
 export function isRemoteTarget(url) {
   if (!url) return false;
-  return !/^(https?:\/\/)?(localhost|127\.0\.0\.1|\[::1\]|0\.0\.0\.0)(:|\/|$)/i.test(url);
+  try {
+    return !LOOPBACK_HOSTS.includes(new URL(/^https?:\/\//i.test(url) ? url : `http://${url}`).hostname);
+  } catch {
+    return true; // what cannot be read is treated as deployed
+  }
 }
 
 function reasonIsArtifactUnavailable(reason) {
@@ -67,10 +75,16 @@ export function validate(verdict) {
       if (!d || !DIMENSION_STATUS.includes(d.status)) errors.push(`dimension ${name}: invalid status (${d && d.status})`);
     }
   }
-  for (const r of verdict.routes ?? []) {
+  const rowsOf = (field) => {
+    const rows = verdict[field] ?? [];
+    if (Array.isArray(rows) && rows.every((row) => row && typeof row === "object")) return rows;
+    errors.push(`${field}: must be a list of objects`);
+    return [];
+  };
+  for (const r of rowsOf("routes")) {
     if (!ROUTE_RESULTS.includes(r.result)) errors.push(`route ${r.route}: invalid result (${r.result})`);
   }
-  for (const s of verdict.scenarios ?? []) {
+  for (const s of rowsOf("scenarios")) {
     if (!SCENARIO_STATUS.includes(s.status)) errors.push(`scenario ${s.id ?? s.dimension}: invalid status (${s.status})`);
   }
 
@@ -101,7 +115,7 @@ function manifestHonored(manifest, { sha, artifact_hash, routes }) {
 
 /**
  * Shared fail-closed derivation for fresh judgments and re-verification:
- *   any REJECT dimension → REJECT;
+ *   any REJECT dimension, or any scenario that manifested or failed → REJECT;
  *   else any reason in leadReasons, any REQUIRED dimension unevaluated or not_applicable, or, at
  *        build, a required dimension without a matching scenario on an exercised route plus
  *        non-empty evidence, any route row Skip/Fail/unevaluable, any declared route not
@@ -114,8 +128,13 @@ function deriveTopLevel({ stage, dimensions, routes, scenarios, artifact_hash, s
   const isBuild = stage === "build";
 
   if (Object.values(dimensions).some((d) => d && d.status === "REJECT")) return { verdict: "REJECT", reasons: [] };
+  if (scenarios.some((s) => REJECTING_STATUS.includes(s.status))) return { verdict: "REJECT", reasons: [] };
 
   const reasons = [...leadReasons];
+  if (!STAGES.includes(stage)) reasons.push(`stage ${stage} is not spec or build`);
+  for (const [name, d] of Object.entries(dimensions)) {
+    if (d && !DIMENSION_STATUS.includes(d.status)) reasons.push(`dimension ${name} has unknown status ${d.status}`);
+  }
   const exercised = new Set(routes.map((r) => r.route));
 
   for (const name of REQUIRED_DIMS[stage] ?? []) {
@@ -162,13 +181,16 @@ function deriveTopLevel({ stage, dimensions, routes, scenarios, artifact_hash, s
 /**
  * Re-derive the top-level verdict from a persisted verdict's OWN recorded components. A consumer
  * uses this to prove they earn the claimed verdict: a forged empty PASS re-derives to unevaluated,
- * and a recorded unevaluated never re-derives to PASS. Returns one of VERDICTS.
+ * and a recorded unevaluated never re-derives to PASS. With the artifact's text it also checks the
+ * verdict's scenarios and routes against that file. Returns one of VERDICTS.
  */
-export function topLevelFromRecorded(verdict) {
+export function topLevelFromRecorded(verdict, artifactText) {
   const artifact_hash = verdict.artifact_hash ?? null;
   const leadReasons = [];
   if (artifact_hash === null) leadReasons.push(verdict.reason ?? "artifact-unavailable");
   else if (verdict.verdict === "unevaluated") leadReasons.push(verdict.reason ?? "unevaluated");
+  const artifact = artifactText === undefined ? { reasons: [], declaredRoutes: [] } : artifactChecks(artifactText, verdict.stage, verdict.scenarios ?? []);
+  leadReasons.push(...artifact.reasons);
   return deriveTopLevel({
     stage: verdict.stage,
     dimensions: verdict.dimensions ?? {},
@@ -177,6 +199,7 @@ export function topLevelFromRecorded(verdict) {
     artifact_hash,
     sha: verdict.sha,
     manifest: verdict.manifest,
+    declaredRoutes: artifact.declaredRoutes,
     leadReasons,
   }).verdict;
 }
@@ -196,11 +219,24 @@ function scenarioCoverageReasons(parsed, recorded) {
     if (seen.has(row.id)) reasons.push(`scenario ${row.id} recorded more than once`);
     seen.add(row.id);
     if (!declared.routes.includes(row.route)) reasons.push(`scenario ${row.id} recorded on undeclared route ${row.route}`);
+    if (row.dimension !== declared.dimension) reasons.push(`scenario ${row.id} recorded under dimension ${row.dimension}, but it declares ${declared.dimension}`);
+    if (row.kind !== undefined && row.kind !== declared.kind) reasons.push(`scenario ${row.id} recorded as kind ${row.kind}, but it declares ${declared.kind}`);
   }
   for (const s of parsed) {
     if (!seen.has(s.id)) reasons.push(`scenario ${s.id} missing from the verdict`);
   }
   return reasons;
+}
+
+// What the artifact itself requires of a verdict: it must lint, and at build every scenario and route must be accounted for.
+function artifactChecks(artifactText, stage, scenarios) {
+  const linted = lint(artifactText);
+  if (!linted.ok) return { reasons: linted.errors.map((e) => `malformed-artifact: ${e.line}: ${e.message}`), declaredRoutes: [] };
+  const parsed = listScenarios(artifactText);
+  return {
+    reasons: stage === "build" ? scenarioCoverageReasons(parsed, scenarios) : [],
+    declaredRoutes: [...new Set(parsed.flatMap((s) => s.routes))],
+  };
 }
 
 /**
@@ -239,17 +275,13 @@ export function compose(draft, { artifactText, sha, fingerprint, manifest, reaso
   const stated = draft.reason ?? reason;
   if (stated) leadReasons.push(stated);
   if (!artifactAvailable && !stated) leadReasons.push("artifact-unavailable");
+  if (isBuild && !draft.target_url && !stated) leadReasons.push("no-target");
 
   let declaredRoutes = [];
   if (artifactAvailable) {
-    const linted = lint(artifactText);
-    if (!linted.ok) {
-      leadReasons.push(...linted.errors.map((e) => `malformed-artifact: ${e.line}: ${e.message}`));
-    } else {
-      const parsed = listScenarios(artifactText);
-      declaredRoutes = [...new Set(parsed.flatMap((s) => s.routes))];
-      if (isBuild) leadReasons.push(...scenarioCoverageReasons(parsed, scenarios));
-    }
+    const checks = artifactChecks(artifactText, stage, scenarios);
+    leadReasons.push(...checks.reasons);
+    declaredRoutes = checks.declaredRoutes;
   }
 
   const { verdict, reasons } = deriveTopLevel({ stage, dimensions, routes, scenarios, artifact_hash, sha, manifest, declaredRoutes, leadReasons });
@@ -258,8 +290,32 @@ export function compose(draft, { artifactText, sha, fingerprint, manifest, reaso
   return { ...base, verdict };
 }
 
-/** Create the working directory with a self-ignoring .gitignore, so evidence never needs a repo edit to stay out of git. */
+const isSymlink = (path) => {
+  try {
+    return lstatSync(path).isSymbolicLink();
+  } catch {
+    return false;
+  }
+};
+
+function isTracked(path) {
+  try {
+    return execFileSync("git", ["ls-files", "--", path], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim() !== "";
+  } catch {
+    return false; // not a git checkout, or a path outside it
+  }
+}
+
+/**
+ * Create the working directory with a self-ignoring .gitignore, so evidence never needs a repo edit
+ * to stay out of git. A PR can commit a symlink here, so a tracked or symlinked directory is refused
+ * rather than written through.
+ */
 export function ensureAcceptanceDir(baseDir = resolve(process.cwd(), ACCEPTANCE_DIR)) {
+  const parent = dirname(baseDir);
+  if (isSymlink(baseDir) || (basename(parent) === ".tmp" && isSymlink(parent)) || isTracked(baseDir)) {
+    throw new Error(`refusing to write to ${baseDir}: it is tracked by git or a symlink`);
+  }
   mkdirSync(baseDir, { recursive: true });
   const ignore = join(baseDir, ".gitignore");
   if (!existsSync(ignore)) writeFileSync(ignore, "*\n");

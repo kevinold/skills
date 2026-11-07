@@ -31,9 +31,9 @@ Three tags are the only machine-read surface. Everything else is prose. Put them
 
 Each scenario has exactly one `@kind`, exactly one `@dimension`, at least one `@route`, and at least one `Then`. Names must stay unique once slugged, because the slug is the scenario's id. A missing `Given` or `When` is a warning.
 
-A route is a path-only reference: it starts with one `/` and uses letters, digits and `. _ ~ : / ? = & % # -`. `/orders/:id` and `/admin#team` are fine. `//host/x` and `/x$(y)` are not.
+A route is a path-only reference: it starts with one `/` and uses letters, digits and `. _ ~ : / ? = % # -`. `/orders/:id` and `/admin#team` are fine. `//host/x`, `/x$(y)` and `/x&y` are not. Put a query with several parameters in the steps instead.
 
-**`good` and `bad` at build time.** A `good` scenario is `held` when it holds on the running app. A `bad` scenario is `held` when its rejection mode correctly fails to appear, and `manifested` when it appears, which is a reject signal.
+**`good` and `bad` at build time.** A `good` scenario is `held` when it holds on the running app. A `good` scenario that does not hold is `failed`. A `bad` scenario is `held` when its rejection mode correctly fails to appear, and `manifested` when it appears. `failed` and `manifested` each compose to `REJECT`.
 
 ## Prose voice
 

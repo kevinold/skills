@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 // usage: capture.mjs --target <origin> --sha <sha> --scenario-id <id> --url <path> --method <verb>
-//                    [--header-env Name=ENV_VAR]... [--secret-env ENV_VAR]... [--body-file <path>]
+//                    [--header-env Name=ENV_VAR]... [--secret-env ENV_VAR]... [--body-file <path>] [--test-record <id>]
 //   Make one API call for a scenario and save it as evidence, so the rules about
 //   secrets are code rather than care. Credentials are named by env var and read
 //   here, so their values never reach argv. Nothing is sent off the target's origin
-//   and no redirect is followed. On a deployed target the saved file keeps structure
-//   only, because a deployed target can show real data; stdout carries the live
-//   response for the judge to read.
-//   Exit codes: 0 called  2 bad usage  3 refused: off the target's origin  4 the call failed
+//   and no redirect is followed. On a deployed target, which can show real data, the
+//   saved file keeps structure only and a write is refused unless its path names the
+//   --test-record; stdout carries the live response for the judge to read.
+//   Exit codes: 0 called  2 bad usage  3 refused  4 the call failed
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -17,6 +17,8 @@ import { ACCEPTANCE_DIR, ensureAcceptanceDir, isRemoteTarget } from "./verdict.m
 const SCRUBBED = "[scrubbed]";
 const CREDENTIAL_HEADER = /auth|cookie|token|key|secret/i;
 const SCENARIO_ID = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+const FIELD_NAME = /^[A-Za-z_][A-Za-z0-9_-]{0,40}$/; // a key shaped otherwise may itself be a value, such as an email
+const READ_METHODS = ["GET", "HEAD", "OPTIONS"];
 
 export function scrubValues(text, secrets) {
   return secrets.filter(Boolean).reduce((out, secret) => out.split(secret).join(SCRUBBED), String(text));
@@ -26,7 +28,7 @@ export function scrubValues(text, secrets) {
 export function structureOf(value) {
   if (value === null) return "null";
   if (Array.isArray(value)) return value.length ? [structureOf(value[0])] : [];
-  if (typeof value === "object") return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, structureOf(v)]));
+  if (typeof value === "object") return Object.fromEntries(Object.entries(value).map(([k, v]) => [FIELD_NAME.test(k) ? k : "<key>", structureOf(v)]));
   return typeof value;
 }
 
@@ -42,11 +44,11 @@ function bodyStructure(label, body) {
 const headerLines = (headers, secrets) =>
   Object.entries(headers).map(([name, value]) => `${name}: ${CREDENTIAL_HEADER.test(name) ? SCRUBBED : scrubValues(value, secrets)}`);
 
-/** The text saved as evidence. A remote capture holds names and types, never values. */
+/** The text saved as evidence. A remote capture holds names and types, never values, and no path, which can hold a value. */
 export function renderCapture({ method, url, requestHeaders, requestBody, status, responseHeaders, responseBody, secrets, remote }) {
   if (remote) {
-    return [
-      `${method} ${url.pathname}`,
+    const saved = [
+      method,
       `request headers: ${Object.keys(requestHeaders).join(", ")}`,
       ...bodyStructure("request body", requestBody),
       `status ${status}`,
@@ -54,6 +56,7 @@ export function renderCapture({ method, url, requestHeaders, requestBody, status
       ...bodyStructure("response body", responseBody),
       "",
     ].join("\n");
+    return scrubValues(saved, secrets);
   }
   return [
     scrubValues(`${method} ${url.pathname}${url.search}`, secrets),
@@ -84,6 +87,7 @@ async function main() {
         "header-env": { type: "string", multiple: true, default: [] },
         "secret-env": { type: "string", multiple: true, default: [] },
         "body-file": { type: "string" },
+        "test-record": { type: "string" },
       },
     }));
   } catch (e) {
@@ -96,15 +100,31 @@ async function main() {
   if (!SCENARIO_ID.test(scenarioId)) return usage(`--scenario-id must be a slug, got "${scenarioId}"`);
 
   let targetUrl;
+  let url;
   try {
     targetUrl = new URL(target);
+    url = new URL(rawUrl, targetUrl);
   } catch {
-    return usage(`--target must be a URL, got "${target}"`);
+    return usage(`--target and --url must parse as URLs, got "${target}" and "${rawUrl}"`);
   }
-  const url = new URL(rawUrl, targetUrl);
+  if (!["http:", "https:"].includes(targetUrl.protocol)) return usage(`--target must be http(s), got "${target}"`);
   if (url.origin !== targetUrl.origin) {
     process.stderr.write(`refused: ${url.origin} is not the target's origin ${targetUrl.origin}\n`);
     return 3;
+  }
+
+  const remote = isRemoteTarget(target);
+  const verb = method.toUpperCase();
+  const testRecord = values["test-record"];
+  if (remote && !READ_METHODS.includes(verb) && !(testRecord && url.pathname.split("/").includes(testRecord))) {
+    process.stderr.write(`refused: ${verb} on a deployed target needs a URL path naming the --test-record\n`);
+    return 3;
+  }
+
+  try {
+    ensureAcceptanceDir();
+  } catch (e) {
+    return usage(e.message);
   }
 
   const secrets = [];
@@ -125,7 +145,7 @@ async function main() {
   let response;
   let responseBody;
   try {
-    response = await fetch(url, { method, headers, body, redirect: "manual" });
+    response = await fetch(url, { method: verb, headers, body, redirect: "manual" });
     responseBody = await response.text();
   } catch (e) {
     process.stderr.write(`the call failed: ${scrubValues(e.message, secrets)}\n`);
@@ -134,7 +154,7 @@ async function main() {
 
   const responseHeaders = Object.fromEntries(response.headers.entries());
   const saved = renderCapture({
-    method,
+    method: verb,
     url,
     requestHeaders: headers,
     requestBody: body,
@@ -142,10 +162,9 @@ async function main() {
     responseHeaders,
     responseBody,
     secrets,
-    remote: isRemoteTarget(target),
+    remote,
   });
 
-  ensureAcceptanceDir();
   const file = join(ACCEPTANCE_DIR, "evidence", sha.slice(0, 7), `${scenarioId}.txt`);
   mkdirSync(dirname(file), { recursive: true });
   writeFileSync(file, saved);

@@ -85,11 +85,11 @@ describe("the tag contract", () => {
     expect(lint(scenario(GOOD, "Case", ["Given a", "When b", "Then c", "But d"])).warnings).toEqual([]);
   });
 
-  it.each(["/orders/:id", "/admin#team", "/a?b=c&d=%20", "/"])("accepts the route %s", (r) => {
+  it.each(["/orders/:id", "/admin#team", "/a?b=c%26d=1", "/"])("accepts the route %s", (r) => {
     expect(lint(scenario(`@kind:good @dimension:legibility @route:${r}`)).errors).toEqual([]);
   });
 
-  it.each(["//host/x", "orders", "/x$(y)", "/x;y", "/x`y`", "/x|y", "/x'y", '/x"y', "/x\\y"])("rejects the route %s", (r) => {
+  it.each(["//host/x", "orders", "/x$(y)", "/x&y", "/x;y", "/x`y`", "/x|y", "/x'y", '/x"y', "/x\\y"])("rejects the route %s", (r) => {
     expect(lint(scenario(`@kind:good @dimension:legibility @route:${r}`)).ok).toBe(false);
   });
 });
@@ -167,6 +167,39 @@ describe("listScenarios", () => {
     expect(listScenarios(text, { route: "/checkout" }).map((s) => s.kind)).toEqual(["good"]);
     expect(listScenarios(text, { dimension: "legibility", route: "/orders" })).toHaveLength(1);
     expect(listScenarios(text, { kind: "bad", route: "/checkout" })).toEqual([]);
+  });
+
+  it("carries a step's data table and doc string", () => {
+    const [, , reorder, receipt] = listScenarios(text);
+    expect(reorder.steps.at(-1)).toEqual({
+      keyword: "Then",
+      text: "the checkout shows the current price:",
+      table: [
+        ["item", "price"],
+        ["filter", "12.50"],
+      ],
+    });
+    expect(receipt.steps.at(-1)).toEqual({ keyword: "Then", text: "the note says:", docString: "Reordered from a past order" });
+  });
+
+  it("unescapes table cells and strips a doc string's indent only", () => {
+    const body = [
+      "Feature: F",
+      "  @kind:good @dimension:legibility @route:/x",
+      "  Scenario: S",
+      "    Given a table:",
+      "      | a \\| b | c \\\\ |",
+      "    When a note:",
+      '      """',
+      "      one",
+      "        two",
+      '      """',
+      "    Then c",
+      "",
+    ].join("\n");
+    const [s] = listScenarios(body);
+    expect(s.steps[0].table).toEqual([["a | b", "c \\"]]);
+    expect(s.steps[1].docString).toBe("one\n  two");
   });
 
   it("puts Background steps first", () => {

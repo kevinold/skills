@@ -1,3 +1,7 @@
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, it, expect } from "vitest";
 import { compose, hashArtifact } from "../../skills/ko-acceptance-validator/scripts/verdict.mjs";
 import { gate } from "../../skills/ko-acceptance-validator/scripts/gate.mjs";
@@ -38,6 +42,49 @@ function buildDraft(overrides = {}) {
 // actually earns PASS (A2).
 const MANIFEST = { verified: true, sha: SHA, artifact_hash: hashArtifact(ARTIFACT), routes: [{ route: "/orders", result: "Pass" }] };
 const buildPass = () => compose(buildDraft(), { artifactText: ARTIFACT, sha: SHA, fingerprint: FP, manifest: MANIFEST });
+
+describe("gate against the artifact", () => {
+  it("would-block when a forged verdict drops a scenario the artifact holds", () => {
+    const v = buildPass();
+    v.scenarios = v.scenarios.filter((s) => s.id !== "g3");
+    expect(gate(JSON.stringify(v), ARTIFACT, SHA)).toBe("would-block: not-earned");
+  });
+
+  it("would-block when a forged verdict omits a declared route", () => {
+    const text = ARTIFACT + "\n" + scenarioText("@kind:good @dimension:legibility @route:/payments", "extra");
+    const v = compose(buildDraft(), { artifactText: ARTIFACT, sha: SHA, fingerprint: FP, manifest: MANIFEST });
+    v.artifact_hash = hashArtifact(text);
+    v.manifest = { ...v.manifest, artifact_hash: v.artifact_hash };
+    expect(gate(JSON.stringify(v), text, SHA)).toBe("would-block: not-earned");
+  });
+
+  it("would-block rather than throw on a verdict whose routes are not a list", () => {
+    const v = buildPass();
+    expect(gate(JSON.stringify({ ...v, routes: {} }), ARTIFACT, SHA)).toMatch(/^would-block: invalid/);
+    expect(gate(JSON.stringify({ ...v, routes: [null] }), ARTIFACT, SHA)).toMatch(/^would-block: invalid/);
+  });
+});
+
+describe("the gate CLI always exits 0", () => {
+  const script = join(import.meta.dirname, "../../skills/ko-acceptance-validator/scripts/gate.mjs");
+  const cli = (...a) => spawnSync(process.execPath, [script, ...a], { encoding: "utf8" });
+
+  it("prints would-block for a missing verdict file", () => {
+    const r = cli("/nonexistent/verdict.json", "/nonexistent/x.feature", SHA);
+    expect(r.status).toBe(0);
+    expect(r.stdout.trim()).toBe("would-block: no-verdict");
+  });
+
+  it("treats a missing .feature as drift", () => {
+    const dir = mkdtempSync(join(tmpdir(), "acceptance-gate-"));
+    const file = join(dir, "v.json");
+    writeFileSync(file, JSON.stringify(buildPass()));
+    const r = cli(file, join(dir, "missing.feature"), SHA);
+    expect(r.status).toBe(0);
+    expect(r.stdout.trim()).toBe("would-block: artifact-drift");
+    rmSync(dir, { recursive: true, force: true });
+  });
+});
 
 describe("gate — advisory consumer", () => {
   it("would-pass for a valid stage:build PASS with target_url and matching SHA + hash", () => {

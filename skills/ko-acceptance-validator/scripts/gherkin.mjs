@@ -15,7 +15,7 @@ export const DIMENSIONS = ["workflow-fit", "legibility", "intent-match", "conven
 
 // A path-only reference. Refuses scheme-relative values, which would leave the
 // target host, and shell metacharacters, because a route may reach a command line.
-const ROUTE = /^\/(?!\/)[A-Za-z0-9._~:/?=&%#-]*$/;
+const ROUTE = /^\/(?!\/)[A-Za-z0-9._~:/?=%#-]*$/;
 const STEP = /^(Given|When|Then|And|But|\*) +(.*)$/;
 const LANGUAGE = /^#\s*language\s*:\s*([a-zA-Z_-]+)\s*$/;
 const DOC_STRING = /^("""|```)/;
@@ -26,13 +26,21 @@ export const slug = (name) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
-// Count a table row's cells. `\|` is a literal pipe and `\\` a literal backslash, as
-// in the official parser.
-function tableCellCount(line) {
-  let cells = 0;
+// A table row's cells, escapes resolved as in the official parser: `\|`, `\\` and `\n`.
+// Text after the last pipe is dropped.
+function tableCells(line) {
+  const cells = [];
+  let cell = "";
   for (let i = 1; i < line.length; i++) {
-    if (line[i] === "\\") i++;
-    else if (line[i] === "|") cells++;
+    if (line[i] === "|") {
+      cells.push(cell.trim());
+      cell = "";
+    } else if (line[i] === "\\" && "|\\n".includes(line[i + 1] ?? " ")) {
+      i++;
+      cell += line[i] === "n" ? "\n" : line[i];
+    } else {
+      cell += line[i];
+    }
   }
   return cells;
 }
@@ -138,7 +146,7 @@ export function parse(text) {
     }
 
     if (line.startsWith("Background:")) {
-      if (pendingTags.length) {
+      if (pendingTagLine) {
         fail(pendingTagLine, "a Background takes no tags");
         takeTags();
       }
@@ -154,7 +162,7 @@ export function parse(text) {
     }
 
     // The Examples of an already-rejected Outline add nothing to its error.
-    if (/^(Examples|Scenarios):/.test(line) && block === "feature") continue;
+    if (/^(Examples|Scenarios):/.test(line) && block === "feature" && !pendingTagLine) continue;
 
     if (/^(Scenario Outline|Scenario Template|Examples|Scenarios):/.test(line)) {
       fail(n, `${line.split(":")[0]} is not supported here; write each case as its own Scenario`);
@@ -184,7 +192,7 @@ export function parse(text) {
       continue;
     }
 
-    if (pendingTags.length) {
+    if (pendingTagLine) {
       fail(pendingTagLine, "a tag must sit above a Feature, Rule or Scenario");
       takeTags();
     }
@@ -207,9 +215,11 @@ export function parse(text) {
     if (!inSteps) continue; // description text between a header and its first step
 
     if (line.startsWith("|") && (afterStep || tableWidth !== null)) {
-      const width = tableCellCount(line);
-      if (tableWidth !== null && width !== tableWidth) fail(n, "this table row has a different cell count from the row above");
-      tableWidth = tableWidth ?? width;
+      const cells = tableCells(line);
+      if (tableWidth !== null && cells.length !== tableWidth) fail(n, "this table row has a different cell count from the row above");
+      tableWidth = tableWidth ?? cells.length;
+      const step = blockSteps.at(-1);
+      step.table = [...(step.table ?? []), cells];
       afterStep = false;
       continue;
     }
@@ -218,7 +228,7 @@ export function parse(text) {
     if (doc && afterStep) {
       let close = -1;
       for (let j = i + 1; j < lines.length; j++) {
-        if (lines[j].trim() === doc[1]) {
+        if (lines[j].trim().startsWith(doc[1])) {
           close = j;
           break;
         }
@@ -227,6 +237,11 @@ export function parse(text) {
         fail(n, "this doc string is never closed");
         break;
       }
+      const indent = lines[i].length - lines[i].trimStart().length;
+      blockSteps.at(-1).docString = lines
+        .slice(i + 1, close)
+        .map((l) => l.replace(new RegExp(`^\\s{0,${indent}}`), ""))
+        .join("\n");
       i = close;
       afterStep = false;
       continue;
@@ -235,7 +250,7 @@ export function parse(text) {
     fail(n, `expected a step keyword (Given, When, Then, And, But, *), got "${line}"; a step stays on one line`);
   }
 
-  if (pendingTags.length) fail(pendingTagLine, "a tag must sit above a Feature, Rule or Scenario");
+  if (pendingTagLine) fail(pendingTagLine, "a tag must sit above a Feature, Rule or Scenario");
   if (!feature && errors.length === 0) fail(1, "expected a Feature: line");
 
   return { feature, scenarios, errors };
@@ -294,7 +309,7 @@ export function listScenarios(text, { route, kind, dimension } = {}) {
       kind: s.kinds[0],
       dimension: s.dimensions[0],
       routes: s.routes,
-      steps: s.allSteps.map(({ keyword, text: stepText }) => ({ keyword, text: stepText })),
+      steps: s.allSteps.map(({ type, ...step }) => step), // type is only for the lint
       line: s.line,
     }))
     .filter((s) => (!route || s.routes.includes(route)) && (!kind || s.kind === kind) && (!dimension || s.dimension === dimension));

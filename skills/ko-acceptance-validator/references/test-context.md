@@ -4,7 +4,7 @@ The `.feature` file says what the judge will check. A coding agent that reads it
 
 ## Snippet for your agent instructions
 
-Paste this into the file your coding agents read, such as `AGENTS.md` or `CLAUDE.md`, replacing `<skill-dir>`:
+Paste this into the file your coding agents read, such as `AGENTS.md` or `CLAUDE.md`, replacing `<skill-dir>` with where the skill is installed in this repo:
 
 ```markdown
 When a plan has a `.feature` file beside it, read its scenarios before writing tests:
@@ -27,13 +27,19 @@ A JSON list, with `Background` steps folded in first:
     "kind": "good",
     "dimension": "workflow-fit",
     "routes": ["/orders/:id", "/checkout"],
-    "steps": [{ "keyword": "Given", "text": "I am looking at a past order" }],
+    "steps": [
+      { "keyword": "Given", "text": "I am looking at a past order" },
+      { "keyword": "When", "text": "I choose \"Order again\"" },
+      { "keyword": "Then", "text": "a new order holds the same items" }
+    ],
     "line": 4
   }
 ]
 ```
 
-On a malformed file it prints the lint errors to stderr and exits 1.
+A step with a data table carries `table`, a list of rows, and a step with a doc string carries `docString`. Assert those values too.
+
+On a malformed file it prints the lint errors to stderr and exits 1. Report that rather than editing the file.
 
 ## From tags to tests
 

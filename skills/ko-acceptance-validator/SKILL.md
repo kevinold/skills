@@ -17,7 +17,7 @@ Everything turns on one **Gherkin `.feature` file**. The spec stage writes it fr
 
 ## Files
 
-`<skill-dir>` is the directory containing this SKILL.md, resolved from where you loaded the skill. Run scripts as `node <skill-dir>/scripts/<x>.mjs` with cwd inside the consumer repo. They need node 22 and no install.
+`<skill-dir>` is the directory containing this SKILL.md, resolved from where you loaded the skill. Run scripts as `node <skill-dir>/scripts/<x>.mjs` with cwd at the consumer repo's root, because they write to `.tmp/acceptance/` relative to it. They need node 22 and no install.
 
 | Read | For |
 |---|---|
@@ -41,14 +41,14 @@ Everything turns on one **Gherkin `.feature` file**. The spec stage writes it fr
 
 The judge is a file in the consumer repo, `docs/acceptance/judge.md` by default, or `--judge <path>`. It holds every project fact: who judges and in what voice, where the job is named, where conventions live, anchor cases, how to run the app, how to sign in, and remote safety. This skill knows no project. Read the judge before judging at either stage.
 
-**With no judge file there is no judgment, never a guess.** Compose `unevaluated`, `reason: missing-judge`, using `verdict.mjs fingerprint` (a missing file hashes as empty bytes), and write no `.feature`.
+**With no judge file there is no judgment, never a guess.** Compose `unevaluated`, `reason: missing-judge`, using `verdict.mjs fingerprint` (a missing file hashes as empty bytes) and `-` as the artifact, and write no `.feature`. [`references/verdict-schema.md`](references/verdict-schema.md) has the draft.
 
-If someone is there to answer, first offer to draft one: read the repo's README and its architecture, design and glossary docs, fill in [`references/judge-template.md`](references/judge-template.md) (label any invented anchor case `(hypothetical)`), and ask them to confirm it. Name secrets only by environment variable. Committing the file is their act. Once they confirm, continue with the stage.
+If someone is there to answer, offer to draft one first: read the repo's README and its architecture, design and glossary docs, fill in [`references/judge-template.md`](references/judge-template.md) (label any invented anchor case `(hypothetical)`), and ask them to confirm it. Name secrets only by environment variable. Committing the file is their act. Once they confirm, continue with the stage.
 
 ## Entry routing
 
 - **`spec <plan-path> ...`:** before code. Follow [Spec-time procedure](#spec-time-procedure).
-- **`build <plan-path> ...`:** with the change running. Follow [`references/build-stage.md`](references/build-stage.md). Without `--target-url` it judges the local app the judge file describes.
+- **`build <plan-path> ...`:** with the change running. Follow [`references/build-stage.md`](references/build-stage.md). Without `--target-url` it judges the local app the judge file describes, except in review posture, which only drives a target that is already running and never starts the PR's code.
 - **A coding agent writing tests from a `.feature`:** follow [`references/test-context.md`](references/test-context.md).
 
 Any run given `--pr <n>` is in **review posture**: someone who did not write the branch is judging an open PR.
@@ -74,18 +74,18 @@ Only **intent-match** and **workflow-fit** can be judged from text. Legibility a
 
 2. **Resolve intent.** Read the plan, plus `--issue <n>` with `gh issue view <n>` when given, plus any request document you were pointed at. With no issue given, look for a closing reference in the plan or an issue number in the branch name. These are the authoritative intent.
 
-3. **Name the job.** Through the judge file, identify the job, its entry point and its success path. If the intent is unreachable or the job cannot be named, compose `unevaluated` (`stage: spec`, `artifact_hash: null`), `reason: insufficient-intent` naming what is missing, persist it, and **stop and ask**. Do not emit a PASS on partial intent, and do not write a `.feature`.
+3. **Name the job.** Through the judge file, identify the job, its entry point and its success path. If the intent is unreachable or the job cannot be named, compose `unevaluated` (`stage: spec`, `artifact_hash: null`), `reason: insufficient-intent` naming what is missing, persist it, and **stop and ask**, or report what is missing if no one can answer. Do not emit a PASS on partial intent, and do not write a `.feature`.
 
 4. **Write the scenarios** to `<plan-dir>/<plan-basename>.feature` per [`references/gherkin-format.md`](references/gherkin-format.md):
    - **Good** scenarios that walk the job through its entry point to its success path.
    - **Bad** scenarios, one per relevant dimension, tied to a dimension rather than listing every negative path.
    - Every scenario tagged `@kind`, `@dimension` and `@route`, including the end-to-end routes the job needs, not only the changed page.
 
-5. **Lint it.** Run `node <skill-dir>/scripts/gherkin.mjs lint <file>` and fix every error before judging. A wrapped step, a line that is not a step, or a missing `Feature:` all fail here.
+5. **Lint it.** Run `node <skill-dir>/scripts/gherkin.mjs lint <file>` and fix every error before judging. A wrapped step, a line that is not a step, or a missing `Feature:` all fail here. If you cannot make it pass, compose anyway: the verdict records `malformed-artifact` with the line.
 
 6. **Judge the plan as the judge.** Judge intent-match and workflow-fit over the plan text: would it, as written, satisfy this person, and what risks does it carry? Write findings in the judge's voice. Mark legibility and convention-fit `not_applicable`.
 
-7. **Compose and persist.** Build a draft with four `dimensions` entries and your findings. Then run `verdict.mjs compose <draft.json> <file> <sha> <fingerprint>` with `stage: spec`, `sha` of `HEAD`, and the fingerprint from `verdict.mjs fingerprint <judge-file> <modelId>`. See [`references/verdict-schema.md`](references/verdict-schema.md).
+7. **Compose and persist.** Write the draft to `.tmp/acceptance/draft.json`, then run `verdict.mjs compose <draft.json> <file> <sha> <fingerprint>`. [`references/verdict-schema.md`](references/verdict-schema.md) has the draft shape and the sha and fingerprint conventions.
 
 8. **Report** the verdict with its per-dimension findings.
    - A spec **REJECT** ends the run with a concrete revision request. The plan must be revised before implementation. The only bypass is a line the operator records in the plan, and the persisted verdict stays `REJECT`.

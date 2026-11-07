@@ -9,8 +9,9 @@
 //   `selection.files`.
 
 import { execFileSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { basename, join, resolve } from "node:path";
+import { createHash } from "node:crypto";
+import { existsSync, readdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
+import { basename, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { DIMENSIONS } from "./gherkin.mjs";
 import { ACCEPTANCE_DIR, ensureAcceptanceDir, isRemoteTarget, validate } from "./verdict.mjs";
@@ -107,7 +108,7 @@ export function composeComment(verdict, selection, { trailer, notes, readText } 
   }
 
   if (selection.omitted > 0) lines.push(`_${selection.omitted} screenshot${selection.omitted === 1 ? "" : "s"} omitted (50-file cap)._`);
-  if (selection.missing > 0) lines.push(`_${selection.missing} evidence file${selection.missing === 1 ? "" : "s"} missing (not found on disk)._`);
+  if (selection.missing > 0) lines.push(`_${selection.missing} evidence file${selection.missing === 1 ? "" : "s"} missing or outside the evidence directory, so not shown._`);
 
   if (notes && notes.trim()) lines.push("", "#### Reviewer notes", "", notes.trim());
 
@@ -148,9 +149,10 @@ export function run(deps, { dryRun = false, trailer, pr, notes } = {}) {
   const verdict = found.verdict;
   const selection = selectEvidence(verdict, deps.exists);
   const evidence = [...selection.files, ...selection.text];
-  // A deployed target can show real data, so its evidence never posts unmarked.
-  if (isRemoteTarget(verdict.target_url) && evidence.length > 0 && verdict.evidence_redacted !== true) {
-    return { posted: false, note: `refused: remote target ${verdict.target_url} evidence not marked redacted (evidence_redacted !== true)` };
+  // A deployed target can show real data, so its evidence never posts unmarked. A verdict that
+  // names no target could be from one, so it is held to the same rule.
+  if ((!verdict.target_url || isRemoteTarget(verdict.target_url)) && evidence.length > 0 && verdict.evidence_redacted !== true) {
+    return { posted: false, note: `refused: remote target ${verdict.target_url ?? "(unnamed)"} evidence not marked redacted (evidence_redacted !== true)` };
   }
 
   const target = resolveTarget({ prNumber: pr ?? deps.prNumber(), branch: deps.branch() });
@@ -160,8 +162,9 @@ export function run(deps, { dryRun = false, trailer, pr, notes } = {}) {
 
   if (dryRun) return { posted: false, note: `dry-run: composed body for ${target.kind} ${target.number}`, body };
 
-  // Idempotent on the exact verdict, target and evidence set, so a corrected verdict still posts.
-  if (deps.alreadyPosted(found.path, target, evidence)) {
+  // Idempotent on the exact body, target and evidence set, so a corrected verdict still posts.
+  const digest = createHash("sha256").update(body).digest("hex");
+  if (deps.alreadyPosted(found.path, target, evidence, digest)) {
     return { posted: false, note: `already posted verdict ${basename(found.path)} to ${target.kind} ${target.number} for HEAD ${sha7}` };
   }
 
@@ -171,7 +174,7 @@ export function run(deps, { dryRun = false, trailer, pr, notes } = {}) {
   } catch (e) {
     return { posted: false, note: `gh failed: ${e.message}` };
   }
-  deps.writeMarker(sha7, target, found.path, evidence);
+  deps.writeMarker(sha7, target, found.path, evidence, digest);
   return { posted: true, note: `posted verdict to ${target.kind} ${target.number}`, body };
 }
 
@@ -218,13 +221,21 @@ function main(argv) {
         return null;
       }
     },
-    exists: (p) => existsSync(p),
+    // Only files under the evidence directory ever post, so a verdict naming .env or a symlink out cannot publish it.
+    exists: (p) => {
+      try {
+        return realpathSync(p).startsWith(realpathSync(join(ACCEPTANCE_DIR, "evidence")) + sep);
+      } catch {
+        return false;
+      }
+    },
     readText: (p) => readFileSync(p, "utf8"),
-    alreadyPosted: (verdictPath, target, files) => {
+    alreadyPosted: (verdictPath, target, files, digest) => {
       try {
         const sha7 = basename(verdictPath).split("-")[1];
         const marker = JSON.parse(readFileSync(postedMarkerPath(sha7), "utf8"));
         return (
+          marker.digest === digest &&
           marker.verdict === basename(verdictPath) &&
           marker.target?.kind === target.kind &&
           marker.target?.number === target.number &&
@@ -240,9 +251,9 @@ function main(argv) {
       writeFileSync(p, text);
       return p;
     },
-    writeMarker: (sha7, target, verdictPath, files) => {
+    writeMarker: (sha7, target, verdictPath, files, digest) => {
       ensureAcceptanceDir();
-      writeFileSync(postedMarkerPath(sha7), JSON.stringify({ target, verdict: basename(verdictPath), evidence: files }, null, 2) + "\n");
+      writeFileSync(postedMarkerPath(sha7), JSON.stringify({ target, verdict: basename(verdictPath), evidence: files, digest }, null, 2) + "\n");
     },
     gh,
     prNumber: () => {
