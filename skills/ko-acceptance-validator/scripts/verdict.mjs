@@ -37,6 +37,12 @@ export function judgeFingerprint(judgeText, modelId) {
   return `${modelId}@${sha256(judgeText ?? "")}`;
 }
 
+/** A target not on the loopback host is a deployed target, which can show real data. Absent = local. */
+export function isRemoteTarget(url) {
+  if (!url) return false;
+  return !/^(https?:\/\/)?(localhost|127\.0\.0\.1|\[::1\]|0\.0\.0\.0)(:|\/|$)/i.test(url);
+}
+
 function reasonIsArtifactUnavailable(reason) {
   return typeof reason === "string" && ARTIFACT_UNAVAILABLE_CODES.some((c) => reason.includes(c));
 }
