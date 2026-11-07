@@ -8,7 +8,7 @@
 //   saved file keeps structure only and a write is refused unless its path names the
 //   --test-record; stdout carries the live response for the judge to read.
 //   Exit codes: 0 called  2 bad usage  3 refused  4 the call failed
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
@@ -173,4 +173,4 @@ async function main() {
   return 0;
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) process.exitCode = await main();
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) process.exitCode = await main();

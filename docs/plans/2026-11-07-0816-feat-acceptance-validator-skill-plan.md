@@ -40,7 +40,7 @@ The judgment that asks "is this the thing its real user needed" exists once, ins
 - KD3. **Coding agents consume scenarios through a short guide and a listing command; the skill generates no test code and runs no BDD runtime.** (session-settled: user-approved — chosen over a test-generating stage: generated tests would drift from the project's own runner and style.) Governs R25, R26.
 - KD4. **The build stage uses whatever browser tool the agent has; the judge file says how to sign in.** The source's sign-in script and its required browser-test skill are dropped. (session-settled: user-approved — chosen over bundling a sign-in script: that script encodes one login vendor.) Governs R14, R15.
 - KD5. **Remote-target safety stays: blurred screenshots and writes limited to one test record.** (session-settled: user-approved — chosen over treating a deployed preview like localhost: a preview can show real data.) Governs R18, R23.
-- KD6. **Left out: the two agent-specific reminder hooks and the calibration replay. The advisory gate stays.** (session-settled: user-approved — chosen over porting them: hooks bind to one agent and installs copy only the folder, and replay has no value without a labeled corpus.) Governs R24.
+- KD6. **Left out: the two agent-specific reminder hooks and the calibration replay. The advisory gate stays.** (session-settled: user-approved — chosen over porting them: hooks bind to one agent and installs copy only the folder, and replay has no value without a labeled corpus.) Governs R24. Reminders came back later at the user's direction in harness-neutral form: `scripts/nudge.mjs`, `scripts/wire-hooks.mjs` for Claude Code and omp, and `references/wiring.md`.
 - KD7. **Deliverable is the plan, the skill, its tests and a README section on a branch; no push or PR unless asked.** (session-settled: user-approved — chosen over opening the PR in the same run.) Governs R27.
 - KD8. **Gherkin is at the core: the `.feature` is real, parser-valid Gherkin and the skill enforces it.** (session-settled: user-directed — chosen over the source's regex-only reading: the 6-of-139 gap and the comment-tag hole.) Governs R4, R5, R6, R8.
 
@@ -110,7 +110,7 @@ The judgment that asks "is this the thing its real user needed" exists once, ins
 ### Scope Boundaries
 
 - Executing scenarios through a BDD runtime, or generating test code. The file is standard Gherkin, so a project may bind it with its own runner; the skill neither requires nor configures one.
-- Calibration replay and the labeled corpus; the two agent-specific reminder hooks; the bundled sign-in script (KD4, KD6).
+- Calibration replay and the labeled corpus; the bundled sign-in script (KD4, KD6).
 - Non-English Gherkin keywords. `# language:` other than `en` is a lint error. It would come back if a consumer asks.
 - A JSON-schema library for the verdict, a linter for the judge file, and pushing the verdict to a commit status. Each would come back with a second consumer that needs it.
 - `Scenario Outline` and `Examples`. One id cannot show that every row was observed, row-level verdicts would widen the schema, and the corpus has none. They would come back if a consumer's scenarios truly need tables of cases.

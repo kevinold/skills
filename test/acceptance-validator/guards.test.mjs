@@ -1,4 +1,6 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, symlinkSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -98,6 +100,18 @@ describe("every shipped script runs with no install", () => {
 
   it("ships no test file a consumer's runner could pick up", () => {
     expect(SKILL_FILES.filter((f) => /\.test\.|__fixtures__/.test(f))).toEqual([]);
+  });
+});
+
+describe("every shipped script runs when installed through a symlink", () => {
+  // Installers link one agent's skill folder to another, so argv[1] is often not the real path.
+  it.each(["gherkin.mjs", "verdict.mjs", "capture.mjs", "wire-hooks.mjs"])("%s reaches its main", (script) => {
+    const dir = mkdtempSync(join(tmpdir(), "acceptance-symlink-"));
+    symlinkSync(join(SKILL, "scripts"), join(dir, "linked"));
+    const r = spawnSync(process.execPath, [join(dir, "linked", script)], { encoding: "utf8" });
+    rmSync(dir, { recursive: true, force: true });
+    expect(r.status).toBe(2);
+    expect(r.stderr).toMatch(/usage/);
   });
 });
 

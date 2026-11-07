@@ -28,6 +28,7 @@ Everything turns on one **Gherkin `.feature` file**. The spec stage writes it fr
 | [`references/build-stage.md`](references/build-stage.md) | The build-stage procedure |
 | [`references/verdict-schema.md`](references/verdict-schema.md) | The verdict shape and fail-closed compose rules |
 | [`references/gate-consumer.md`](references/gate-consumer.md) | What an advisory gate reads |
+| [`references/wiring.md`](references/wiring.md) | Making the stages run on their own, on any harness |
 
 | Script | Does |
 |---|---|
@@ -36,6 +37,8 @@ Everything turns on one **Gherkin `.feature` file**. The spec stage writes it fr
 | `scripts/capture.mjs` | Makes one API call and saves credential-safe evidence. |
 | `scripts/attach-evidence.mjs` | Posts the build verdict with its evidence to the PR or issue. |
 | `scripts/gate.mjs` | Prints an advisory `would-pass` or `would-block: <reason>`. |
+| `scripts/nudge.mjs` | Prints a reminder when an agent's last action calls for a stage. Any harness's hook can call it. |
+| `scripts/wire-hooks.mjs` | Wires that reminder into Claude Code or omp. |
 
 ## The judge
 

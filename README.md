@@ -165,6 +165,14 @@ One judge file per repo, `docs/acceptance/judge.md` by default. It holds every p
 
 Verdicts and evidence go to `.tmp/acceptance/`, which ignores itself in git.
 
+Nothing runs the stages on its own until you wire it in. Paste the snippet in [`wiring.md`](skills/ko-acceptance-validator/references/wiring.md) into your agent instructions, which works on any harness. For a reminder that fires deterministically, add a hook:
+
+```text
+node <skill-dir>/scripts/wire-hooks.mjs claude-code    # or: omp
+```
+
+Another harness can call `scripts/nudge.mjs event` from its own post-tool hook.
+
 ### Usage
 
 ```text
