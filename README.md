@@ -45,6 +45,7 @@ A project-level install lands in the repo, for example `.claude/skills/<name>/` 
 | [`ko-multi-worker-pm`](skills/ko-multi-worker-pm/SKILL.md) | Runs one agent session as an autonomous PM over up to 3 parallel worker agents in herdr panes. It works backlog issues, tends stalled Renovate PRs, or drives a spine epic's sub-issues as gated sequential lanes. |
 | [`ko-meeting-notes`](skills/ko-meeting-notes/SKILL.md) | Files a meeting transcript into `docs/meeting-notes/<series>/<date>/` and writes a PM-grade summary with speaker and timestamp attributions. It can watch the recording to add a PII-gated screen-share timeline, and ends with PRFAQ refinements and candidates. |
 | [`ko-prfaq`](skills/ko-prfaq/SKILL.md) | Writes a status-honest PRFAQ (Markdown plus a self-contained HTML twin) in `docs/prfaqs/`, or applies a meeting's refinements to an existing one. |
+| [`ko-acceptance-validator`](skills/ko-acceptance-validator/SKILL.md) | Judges a change the way its real user would: the plan before code, then the running app, from one Gherkin `.feature` file that coding agents also read when writing tests. Emits an advisory verdict and works for any full-stack project through a per-repo judge file. |
 
 ## ko-multi-worker-pm
 
@@ -147,6 +148,39 @@ None. PRFAQs live in `docs/prfaqs/`, indexed by `docs/prfaqs/README.md`.
 /ko-prfaq docs/meeting-notes/<series>/<date>/<date>-prfaq-refinements.md   # update existing PRFAQs
 /ko-prfaq <feature discussed in this conversation>
 ```
+
+## ko-acceptance-validator
+
+### Prerequisites
+
+| Requirement | Why |
+| --- | --- |
+| `node` ≥ 22 | Runs the scripts in `scripts/`. They have no npm dependencies. |
+| A browser tool, such as your agent's own or [`agent-browser`](https://www.npmjs.com/package/agent-browser) | Walks page routes. A change with only API routes needs none. |
+| `gh` with `comment --attach`, authenticated (optional) | Posts the build verdict and its screenshots to the PR or issue. Without it, the verdict still persists locally. |
+
+### Configuration
+
+One judge file per repo, `docs/acceptance/judge.md` by default. It holds every project fact: who judges and in what voice, where the job is named, where conventions live, anchor cases, how to run the app, how to sign in, and remote safety. The first interactive run offers to draft it from your docs and asks you to confirm. Until it exists, every verdict is `unevaluated`. Template: [`judge-template.md`](skills/ko-acceptance-validator/references/judge-template.md).
+
+Verdicts and evidence go to `.tmp/acceptance/`, which ignores itself in git.
+
+### Usage
+
+```text
+/ko-acceptance-validator spec docs/plans/my-plan.md --issue 12     # before code: write the .feature, judge the plan
+/ko-acceptance-validator build docs/plans/my-plan.md               # change running locally: walk it, judge it, post it
+/ko-acceptance-validator build docs/plans/my-plan.md --target-url https://pr-12.preview.example --pr 12
+```
+
+The `.feature` is plain Gherkin, and any file the skill's lint accepts also passes the official parser. So coding agents can write tests against the same scenarios the judge checks, paste the snippet in [`test-context.md`](skills/ko-acceptance-validator/references/test-context.md) into your `AGENTS.md` or `CLAUDE.md`. It points them at:
+
+```text
+node <skill-dir>/scripts/gherkin.mjs lint <file>                                       # syntax and tag contract
+node <skill-dir>/scripts/gherkin.mjs scenarios <file> [--route x] [--kind y] [--dimension z]   # scenarios as JSON
+```
+
+The skill generates no test code and runs no BDD runtime. On a deployed target it writes only to a named `--test-record`, blurs screenshots, and saves API captures as structure only, because a deployed target can show real data.
 
 ## Adding a skill
 
