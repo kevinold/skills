@@ -6,11 +6,15 @@
   "license": "MIT",
   "author": "Kevin Old",
   "type": "module",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "test": "vitest run"
   },
   "devDependencies": {
+    "@cucumber/gherkin": "42.0.1",
+    "@cucumber/messages": "34.2.1",
     "vitest": "4.1.11"
   }
 }
